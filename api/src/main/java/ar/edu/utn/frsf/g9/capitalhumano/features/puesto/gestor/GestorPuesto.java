@@ -4,6 +4,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.dao.CompetenciaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao.PuestoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dto.CaracteristicaDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dto.PuestoBusquedaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dto.PuestoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.CaracteristicaPuesto;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
@@ -11,6 +12,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoExcepti
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.security.ContextoSeguridad;
+import ar.edu.utn.frsf.g9.capitalhumano.shared.util.TextoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -135,6 +137,44 @@ public class GestorPuesto {
         log.info("Puesto creado exitosamente con ID {} y código {}", guardado.getId(), guardado.getCodigo());
 
         return aDTO(guardado);
+    }
+
+    /**
+     * Busca puestos vigentes por cÃ³digo, nombre y/o empresa (CU 025 - mensajes 23 y 24).
+     *
+     * <p>Las comparaciones son parciales e ignoran mayÃºsculas y acentos. Si no se indica
+     * ningÃºn filtro se retornan todos los puestos vigentes.</p>
+     *
+     * @param codigo  filtro de cÃ³digo (opcional)
+     * @param nombre  filtro de nombre (opcional)
+     * @param empresa filtro de empresa (opcional)
+     * @return lista de puestos que cumplen los criterios
+     */
+    @Transactional(readOnly = true)
+    public List<PuestoBusquedaDTO> buscar(String codigo, String nombre, String empresa) {
+        return puestoDAO.findByEliminadoFalseOrderByNombreAsc().stream()
+                .filter(p -> TextoUtils.contieneIgnorandoAcentos(p.getCodigo(), codigo))
+                .filter(p -> TextoUtils.contieneIgnorandoAcentos(p.getNombre(), nombre))
+                .filter(p -> TextoUtils.contieneIgnorandoAcentos(p.getEmpresa(), empresa))
+                .map(p -> new PuestoBusquedaDTO(p.getId(), p.getCodigo(), p.getNombre(), p.getEmpresa()))
+                .toList();
+    }
+
+    /**
+     * Obtiene un puesto vigente con sus competencias y ponderaciones requeridas
+     * (CU 025 - mensajes 29 a 32).
+     *
+     * @param codigo cÃ³digo del puesto
+     * @return DTO del puesto con sus caracterÃ­sticas
+     * @throws RecursoNoEncontradoException si el puesto no existe o fue eliminado
+     */
+    @Transactional(readOnly = true)
+    public PuestoDTO obtener(String codigo) {
+        String codigoNormalizado = codigo != null ? codigo.trim().toUpperCase(Locale.ROOT) : "";
+        Puesto puesto = puestoDAO.findByCodigoAndEliminadoFalse(codigoNormalizado)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe un puesto con el cÃ³digo '" + codigoNormalizado + "'"));
+        return aDTO(puesto);
     }
 
     private PuestoDTO aDTO(Puesto entidad) {

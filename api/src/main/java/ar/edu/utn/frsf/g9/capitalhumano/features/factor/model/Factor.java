@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.factor.model;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.model.Competencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.Pregunta;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.model.EntidadAuditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,8 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidad JPA que representa un Factor evaluable asociado a una Competencia (CU 017).
@@ -43,6 +48,9 @@ public class Factor extends EntidadAuditable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "competencia_id", nullable = false)
     private Competencia competencia;
+
+    @OneToMany(mappedBy = "factor", fetch = FetchType.LAZY)
+    private List<Pregunta> preguntas = new ArrayList<>();
 
     public Factor() {
         this.setEliminado(false);
@@ -104,6 +112,30 @@ public class Factor extends EntidadAuditable {
 
     public void setCompetencia(Competencia competencia) {
         this.competencia = competencia;
+    }
+
+    public List<Pregunta> getPreguntas() {
+        return preguntas;
+    }
+
+    public void setPreguntas(List<Pregunta> preguntas) {
+        this.preguntas = preguntas;
+    }
+
+    /**
+     * Indica si el factor cumple la condiciÃ³n para ser evaluado: poseer al menos
+     * 2 preguntas vigentes (no eliminadas). Ver CU 025 flujo 9.A y CU 026 paso 3.
+     *
+     * @return {@code true} si el factor tiene 2 o mÃ¡s preguntas vigentes
+     */
+    public boolean tieneMinimoDosPreguntas() {
+        if (preguntas == null) {
+            return false;
+        }
+        long vigentes = preguntas.stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getEliminado()))
+                .count();
+        return vigentes >= 2;
     }
 }
 

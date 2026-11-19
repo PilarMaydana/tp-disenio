@@ -8,7 +8,7 @@ export const ROUTES = {
     LOGIN: '/',
   },
   CONSULTOR: {
-    EVALUACIONES: '/en-desarrollo?modulo=Evaluación+de+Candidatos',
+    EVALUACIONES: '/evaluaciones/evaluar',
     COMPETENCIAS: '/competencias',
     COMPETENCIAS_NUEVO: '/competencias/nueva',
     COMPETENCIAS_NUEVA: '/competencias/nueva',
