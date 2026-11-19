@@ -7,6 +7,8 @@ import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoExcepti
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -48,6 +50,33 @@ public class GestorCompetencia {
         Competencia entidad = aEntidad(codigo, nombre, descripcion);
         Competencia guardada = competenciaDAO.save(entidad);
         return aDTO(guardada);
+    }
+
+    /**
+     * Obtiene el listado completo de competencias registradas en el sistema,
+     * ordenadas por nombre de forma ascendente.
+     *
+     * @return lista de competencias en formato DTO ordenada por nombre ascendente
+     */
+    @Transactional(readOnly = true)
+    public List<CompetenciaDTO> listar() {
+        return competenciaDAO.findAll().stream()
+                .sorted(Comparator.comparing(
+                        Competencia::getNombre,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .map(this::aDTO)
+                .toList();
+    }
+
+    /**
+     * Alias de {@link #listar()} para compatibilidad.
+     *
+     * @return lista de competencias en formato DTO ordenada por nombre ascendente
+     */
+    @Transactional(readOnly = true)
+    public List<CompetenciaDTO> listarCompetencias() {
+        return listar();
     }
 
     private Competencia aEntidad(String codigo, String nombre, String descripcion) {

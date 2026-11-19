@@ -1,34 +1,36 @@
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { LoginScreen } from '@/features/cu001-autenticar-usuario';
 import { ROUTES } from '@/constants/routes';
 
 export default function HomePage() {
-  const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated && user) {
-        if (user.role === 'CANDIDATO') {
-          router.replace(ROUTES.CANDIDATO.CUESTIONARIO);
-        } else {
-          router.replace(ROUTES.CONSULTOR.PUESTOS);
-        }
+    if (isLoading) return;
+
+    if (isAuthenticated && user) {
+      if (user.role === 'CANDIDATO') {
+        router.replace(ROUTES.CANDIDATO.CUESTIONARIO);
       } else {
-        router.replace(ROUTES.AUTH.LOGIN);
+        router.replace(ROUTES.CONSULTOR.PUESTOS_NUEVO);
       }
     }
-  }, [isAuthenticated, user, isLoading, router]);
+  }, [user, isAuthenticated, isLoading, router]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#DDDDDD]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-4 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm font-semibold text-[#3F2581]">Cargando Consultora Capit@l Humano...</span>
+  // Si está verificando sesión o si ya está autenticado (esperando redirección a su portal), mostrar loader breve
+  if (isLoading || (isAuthenticated && user)) {
+    return (
+      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center p-4">
+        <div className="w-8 h-8 border-3 border-[#3F2581] border-t-transparent rounded-full animate-spin" />
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Primera pantalla del sistema en producción: Login (CU001)
+  return <LoginScreen />;
 }

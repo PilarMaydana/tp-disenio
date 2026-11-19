@@ -2,25 +2,47 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.competencia.controller;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.dto.CompetenciaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.competencia.gestor.GestorCompetencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.factor.dto.FactorDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.gestor.GestorPregunta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
- * Controlador REST para la gestión de Competencias (CU 013).
+ * Controlador REST para la gestión de Competencias y sus Factores asociados (CU 013 / CU 021).
  */
 @RestController
 @RequestMapping("/api/competencias")
+@Tag(name = "Competencias", description = "Endpoints para la gestión de Competencias y Factores")
 public class CompetenciaController {
 
     private final GestorCompetencia gestorCompetencia;
+    private final GestorPregunta gestorPregunta;
+
+    @Autowired
+    public CompetenciaController(GestorCompetencia gestorCompetencia, GestorPregunta gestorPregunta) {
+        this.gestorCompetencia = gestorCompetencia;
+        this.gestorPregunta = gestorPregunta;
+    }
 
     public CompetenciaController(GestorCompetencia gestorCompetencia) {
-        this.gestorCompetencia = gestorCompetencia;
+        this(gestorCompetencia, null);
     }
 
     /**
@@ -30,8 +52,45 @@ public class CompetenciaController {
      * @return competencia creada con HTTP 201
      */
     @PostMapping
+    @Operation(summary = "Dar de alta una nueva competencia", description = "Registra una competencia en el sistema.")
     public ResponseEntity<CompetenciaDTO> crearCompetencia(@Valid @RequestBody CompetenciaDTO dto) {
         CompetenciaDTO creada = gestorCompetencia.crearCompetencia(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+    }
+
+    /**
+     * Obtiene la lista completa de competencias disponibles ordenadas por nombre ascendente.
+     *
+     * @return lista de competencias con HTTP 200 (vacía si no hay datos)
+     */
+    @GetMapping
+    @Operation(
+            summary = "Listar competencias",
+            description = "Retorna el listado de competencias registradas ordenadas por nombre ascendente (vacía si no hay datos)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Listado de competencias obtenido exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CompetenciaDTO.class)))
+            )
+    })
+    public ResponseEntity<List<CompetenciaDTO>> listarCompetencias() {
+        return ResponseEntity.ok(gestorCompetencia.listar());
+    }
+
+    /**
+     * Carga dinámicamente todos los factores correspondientes a una competencia seleccionada (CU 021).
+     *
+     * @param codigoCompetencia código de la competencia
+     * @return lista de factores correspondientes con HTTP 200
+     */
+    @GetMapping("/{codigoCompetencia}/factores")
+    @Operation(summary = "Listar factores por competencia", description = "Carga dinámicamente todos los factores asociados a una competencia seleccionada.")
+    public ResponseEntity<List<FactorDTO>> listarFactoresPorCompetencia(@PathVariable String codigoCompetencia) {
+        if (gestorPregunta == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(gestorPregunta.listarFactoresPorCompetencia(codigoCompetencia));
     }
 }

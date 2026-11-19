@@ -23,10 +23,17 @@ import {
   Plus,
   Trash2,
   Check,
+  CheckSquare,
+  Puzzle,
+  SlidersVertical,
   ChevronDown,
   ChevronRight,
   Filter,
   X,
+  Sparkles,
+  FileQuestion,
+  Timer,
+  Clock,
   LucideProps,
 } from 'lucide-react';
 
@@ -46,16 +53,25 @@ export type IconName =
   | 'alternate_email'
   | 'work'
   | 'assignment'
+  | 'file_question'
   | 'bar_chart'
   | 'help_outline'
   | 'format_list_numbered'
   | 'plus'
   | 'trash'
   | 'check'
+  | 'check_square'
+  | 'puzzle'
+  | 'tune'
   | 'chevron_down'
   | 'chevron_right'
   | 'filter'
-  | 'close';
+  | 'close'
+  | 'sparkles'
+  | 'auto_awesome'
+  | 'timer'
+  | 'schedule'
+  | 'clock';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName | string;
@@ -79,16 +95,25 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   alternate_email: AtSign,
   work: Briefcase,
   assignment: ClipboardList,
+  file_question: FileQuestion,
   bar_chart: BarChart3,
   help_outline: HelpCircle,
   format_list_numbered: ListOrdered,
   plus: Plus,
   trash: Trash2,
   check: Check,
+  check_square: CheckSquare,
+  puzzle: Puzzle,
+  tune: SlidersVertical,
   chevron_down: ChevronDown,
   chevron_right: ChevronRight,
   filter: Filter,
   close: X,
+  sparkles: Sparkles,
+  auto_awesome: Sparkles,
+  timer: Timer,
+  schedule: Clock,
+  clock: Clock,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 20, className = '', ...props }) => {
