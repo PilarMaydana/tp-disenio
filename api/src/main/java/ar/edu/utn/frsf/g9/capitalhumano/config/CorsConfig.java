@@ -28,6 +28,8 @@ public class CorsConfig {
                         .allowedOrigins("http://localhost:3000")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
+                        // Permite al frontend leer el nombre del archivo Excel (CU 025)
+                        .exposedHeaders("Content-Disposition")
                         .allowCredentials(true);
             }
         };

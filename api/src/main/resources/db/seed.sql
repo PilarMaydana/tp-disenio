@@ -58,8 +58,46 @@ INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, n
     (2, 'DNI', '87654321', 'GÓMEZ', 'MARÍA', 'maria.gomez@example.com', FALSE),
     (3, 'DNI', '11223344', 'LÓPEZ', 'CARLOS', 'carlos.lopez@example.com', FALSE);
 
-INSERT INTO cuestionario (candidato_id, puesto_id, estado, clave_acceso, fecha_creacion, eliminado) VALUES
-    (1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, FALSE),
-    (2, 1, 'EN_PROCESO', 'TEST4567', CURRENT_TIMESTAMP, FALSE),
-    (3, 1, 'COMPLETO', 'COMP1234', CURRENT_TIMESTAMP, FALSE);
+-- CU 025: evaluación que agrupa los cuestionarios de ejemplo
+INSERT INTO evaluacion (puesto_id, fecha_creacion) VALUES
+    (1, CURRENT_TIMESTAMP);
 
+INSERT INTO cuestionario (candidato_id, evaluacion_id, puesto_id, estado, clave_acceso, fecha_creacion, eliminado) VALUES
+    (1, 1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, FALSE),
+    (2, 1, 1, 'EN_PROCESO', 'TEST4567', CURRENT_TIMESTAMP, FALSE),
+    (3, 1, 1, 'COMPLETO', 'COMP1234', CURRENT_TIMESTAMP, FALSE);
+
+
+-- ---------------------------------------------------------------------------
+-- CU 025 - Evaluar candidatos: datos adicionales para probar los flujos
+-- ---------------------------------------------------------------------------
+-- Preguntas para el factor COMUNICACIÓN ORAL (FAC-01): con 2 preguntas la
+-- competencia COMUNICACIÓN pasa a ser evaluable.
+INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALUES
+    ('EXPOSICIÓN EN REUNIONES', '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?', 'COMUNICACIÓN VERBAL', 1, FALSE),
+    ('ESCUCHA ACTIVA', '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?', 'COMUNICACIÓN VERBAL', 1, FALSE);
+
+INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
+    (3, 'NUNCA', 'NUNCA', 1, 0.0),
+    (3, 'A VECES', 'A VECES', 2, 4.0),
+    (3, 'SIEMPRE', 'SIEMPRE', 3, 6.0),
+    (4, 'NUNCA', 'NUNCA', 1, 0.0),
+    (4, 'A VECES', 'A VECES', 2, 4.0),
+    (4, 'SIEMPRE', 'SIEMPRE', 3, 6.0);
+
+-- Puesto evaluable: todas sus competencias tienen al menos un factor con 2 preguntas.
+-- (DEV-01 y QA-01 quedan como ejemplos de puestos NO evaluables - flujo 9.A)
+INSERT INTO puesto (codigo, nombre, descripcion, empresa, eliminado) VALUES
+    ('BACK-01', 'DESARROLLADOR BACKEND JUNIOR', 'DESARROLLO DE SERVICIOS Y APIS.', 'TECH SOLUTIONS', FALSE);
+
+INSERT INTO caracteristica_puesto (puesto_id, competencia_id, ponderacion_requerida) VALUES
+    (3, 5, 7.0),
+    (3, 1, 6.0);
+
+-- Candidatos sin cuestionarios (disponibles para evaluar)
+INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
+    (4, 'DNI', '40111222', 'ROMERO', 'AGUSTÍN', 'agustin.romero@example.com', FALSE),
+    (5, 'DNI', '41222333', 'DÍAZ', 'CAMILA', 'camila.diaz@example.com', FALSE),
+    (6, 'DNI', '38333444', 'BENÍTEZ', 'MARTÍN', 'martin.benitez@example.com', FALSE),
+    (7, 'PP', 'AAB123456', 'FERREYRA', 'SOFÍA', 'sofia.ferreyra@example.com', FALSE),
+    (8, 'DNI', '42444555', 'ROMERO', 'LUCAS', 'lucas.romero@example.com', FALSE);
