@@ -52,8 +52,8 @@ export function useEvaluarCandidatos() {
   // Paso 3: candidatos con claves y evaluación guardada
   const [candidatosConClave, setCandidatosConClave] = useState<CandidatoClave[]>([]);
   const [evaluacion, setEvaluacion] = useState<EvaluacionCreada | null>(null);
-  // El Excel se pide al backend apenas se guarda la evaluaciÃ³n, asÃ­ el diÃ¡logo "Guardar como"
-  // se abre inmediatamente cuando el actor responde "SÃ­" (el navegador exige que sea una acciÃ³n directa).
+  // El Excel se pide al backend apenas se guarda la evaluación, así el diálogo "Guardar como"
+  // se abre inmediatamente cuando el actor responde "Sí" (el navegador exige que sea una acción directa).
   const archivoRef = useRef<Promise<ArchivoExcel> | null>(null);
 
   // ------------------------------------------------------------ Paso 2-3: búsqueda
@@ -226,7 +226,7 @@ export function useEvaluarCandidatos() {
         archivo = await (archivoRef.current ??
           evaluarCandidatosService.exportarExcel(evaluacion.evaluacionId, `${evaluacion.puestoNombre}.xls`));
       } catch (error) {
-        archivoRef.current = null; // se reintenta en el prÃ³ximo intento
+        archivoRef.current = null; // se reintenta en el próximo intento
         throw error;
       }
       const resultado = await guardarArchivoComo(archivo.contenido, archivo.nombreArchivo);

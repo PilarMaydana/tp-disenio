@@ -140,12 +140,12 @@ public class GestorPuesto {
     }
 
     /**
-     * Busca puestos vigentes por cÃ³digo, nombre y/o empresa (CU 025 - mensajes 23 y 24).
+     * Busca puestos vigentes por código, nombre y/o empresa (CU 025 - mensajes 23 y 24).
      *
-     * <p>Las comparaciones son parciales e ignoran mayÃºsculas y acentos. Si no se indica
-     * ningÃºn filtro se retornan todos los puestos vigentes.</p>
+     * <p>Las comparaciones son parciales e ignoran mayúsculas y acentos. Si no se indica
+     * ningún filtro se retornan todos los puestos vigentes.</p>
      *
-     * @param codigo  filtro de cÃ³digo (opcional)
+     * @param codigo  filtro de código (opcional)
      * @param nombre  filtro de nombre (opcional)
      * @param empresa filtro de empresa (opcional)
      * @return lista de puestos que cumplen los criterios
@@ -164,8 +164,8 @@ public class GestorPuesto {
      * Obtiene un puesto vigente con sus competencias y ponderaciones requeridas
      * (CU 025 - mensajes 29 a 32).
      *
-     * @param codigo cÃ³digo del puesto
-     * @return DTO del puesto con sus caracterÃ­sticas
+     * @param codigo código del puesto
+     * @return DTO del puesto con sus características
      * @throws RecursoNoEncontradoException si el puesto no existe o fue eliminado
      */
     @Transactional(readOnly = true)
@@ -173,7 +173,7 @@ public class GestorPuesto {
         String codigoNormalizado = codigo != null ? codigo.trim().toUpperCase(Locale.ROOT) : "";
         Puesto puesto = puestoDAO.findByCodigoAndEliminadoFalse(codigoNormalizado)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No existe un puesto con el cÃ³digo '" + codigoNormalizado + "'"));
+                        "No existe un puesto con el código '" + codigoNormalizado + "'"));
         return aDTO(puesto);
     }
 

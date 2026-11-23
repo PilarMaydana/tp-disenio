@@ -44,10 +44,10 @@ public interface PuestoDAO extends JpaRepository<Puesto, Long> {
     Optional<Puesto> findByNombre(String nombre);
 
     /**
-     * Busca un puesto vigente (no eliminado) por su cÃ³digo.
+     * Busca un puesto vigente (no eliminado) por su código.
      *
-     * @param codigo cÃ³digo del puesto
-     * @return Optional con el puesto encontrado, o vacÃ­o
+     * @param codigo código del puesto
+     * @return Optional con el puesto encontrado, o vacío
      */
     Optional<Puesto> findByCodigoAndEliminadoFalse(String codigo);
 
