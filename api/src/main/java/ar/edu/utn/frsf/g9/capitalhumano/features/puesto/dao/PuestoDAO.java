@@ -3,6 +3,7 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,5 +42,20 @@ public interface PuestoDAO extends JpaRepository<Puesto, Long> {
      * @return Optional con el puesto encontrado, o vacío
      */
     Optional<Puesto> findByNombre(String nombre);
+
+    /**
+     * Busca un puesto vigente (no eliminado) por su cÃ³digo.
+     *
+     * @param codigo cÃ³digo del puesto
+     * @return Optional con el puesto encontrado, o vacÃ­o
+     */
+    Optional<Puesto> findByCodigoAndEliminadoFalse(String codigo);
+
+    /**
+     * Lista los puestos vigentes ordenados por nombre.
+     *
+     * @return puestos no eliminados
+     */
+    List<Puesto> findByEliminadoFalseOrderByNombreAsc();
 }
 

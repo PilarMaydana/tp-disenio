@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.puesto.controller;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dto.PuestoBusquedaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dto.PuestoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.gestor.GestorPuesto;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.web.ApiError;
@@ -12,10 +13,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Controlador REST para el alta y administración de Puestos (CU 009).
@@ -29,6 +35,41 @@ public class PuestoController {
 
     public PuestoController(GestorPuesto gestorPuesto) {
         this.gestorPuesto = gestorPuesto;
+    }
+
+    /**
+     * Busca puestos vigentes por cÃ³digo, nombre y/o empresa (CU 025 - paso 8).
+     * Sin filtros retorna todos los puestos vigentes.
+     *
+     * @param codigo  filtro de cÃ³digo
+     * @param nombre  filtro de nombre
+     * @param empresa filtro de empresa
+     * @return lista de puestos
+     */
+    @GetMapping
+    @Operation(summary = "Buscar puestos", description = "Busca puestos por cÃ³digo, nombre y/o empresa.")
+    public ResponseEntity<List<PuestoBusquedaDTO>> buscar(
+            @RequestParam(required = false) String codigo,
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String empresa) {
+        return ResponseEntity.ok(gestorPuesto.buscar(codigo, nombre, empresa));
+    }
+
+    /**
+     * Obtiene un puesto con sus competencias y ponderaciones requeridas (CU 025 - paso 9).
+     *
+     * @param codigo cÃ³digo del puesto
+     * @return puesto con sus caracterÃ­sticas
+     */
+    @GetMapping("/{codigo}")
+    @Operation(summary = "Obtener puesto", description = "Retorna el puesto con sus competencias y ponderaciones.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Puesto encontrado"),
+            @ApiResponse(responseCode = "404", description = "Puesto inexistente",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<PuestoDTO> obtener(@PathVariable String codigo) {
+        return ResponseEntity.ok(gestorPuesto.obtener(codigo));
     }
 
     /**

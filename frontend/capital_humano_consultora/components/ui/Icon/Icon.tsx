@@ -34,6 +34,11 @@ import {
   FileQuestion,
   Timer,
   Clock,
+  Download,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  KeyRound,
   LucideProps,
 } from 'lucide-react';
 
@@ -71,7 +76,12 @@ export type IconName =
   | 'auto_awesome'
   | 'timer'
   | 'schedule'
-  | 'clock';
+  | 'clock'
+  | 'download'
+  | 'error'
+  | 'warning'
+  | 'check_circle'
+  | 'key';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName | string;
@@ -114,6 +124,11 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   timer: Timer,
   schedule: Clock,
   clock: Clock,
+  download: Download,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  check_circle: CheckCircle2,
+  key: KeyRound,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, size = 20, className = '', ...props }) => {

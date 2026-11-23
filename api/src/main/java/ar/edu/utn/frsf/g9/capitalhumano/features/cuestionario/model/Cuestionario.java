@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Candidato;
+import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.model.Evaluacion;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.model.EntidadAuditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,6 +31,10 @@ public class Cuestionario extends EntidadAuditable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "candidato_id", nullable = false)
     private Candidato candidato;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evaluacion_id")
+    private Evaluacion evaluacion;
 
     @Column(name = "puesto_id")
     private Long puestoId;
@@ -145,5 +150,23 @@ public class Cuestionario extends EntidadAuditable {
 
     public void setUltimoBloqueRespondido(Integer ultimoBloqueRespondido) {
         this.ultimoBloqueRespondido = ultimoBloqueRespondido;
+    }
+
+    public Evaluacion getEvaluacion() {
+        return evaluacion;
+    }
+
+    public void setEvaluacion(Evaluacion evaluacion) {
+        this.evaluacion = evaluacion;
+    }
+
+    /**
+     * Indica si el cuestionario estÃ¡ ACTIVO o EN_PROCESO, es decir, si impide
+     * que el candidato sea evaluado nuevamente (CU 025 - flujo 6.A).
+     *
+     * @return {@code true} si el cuestionario estÃ¡ activo o en proceso
+     */
+    public boolean estaActivo() {
+        return estado == EstadoCuestionario.ACTIVO || estado == EstadoCuestionario.EN_PROCESO;
     }
 }
