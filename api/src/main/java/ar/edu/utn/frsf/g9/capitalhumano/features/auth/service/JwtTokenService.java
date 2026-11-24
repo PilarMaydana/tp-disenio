@@ -8,7 +8,11 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionException;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
@@ -101,6 +105,39 @@ public class JwtTokenService {
             return contentToSign + "." + signatureEncoded;
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Error al serializar claims de JWT", e);
+        }
+    }
+
+    /**
+     * Valida la firma y la vigencia de un token generado por este servicio y devuelve sus claims.
+     *
+     * @param token JWT recibido (sin el prefijo "Bearer ")
+     * @return claims del token
+     * @throws AutenticacionException si el token falta, está mal formado, fue alterado o expiró
+     */
+    public Map<String, Object> validarToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new AutenticacionException("Debe iniciar sesión para continuar");
+        }
+        String[] partes = token.trim().split("[.]");
+        if (partes.length != 3) {
+            throw new AutenticacionException("Sesión inválida");
+        }
+        String firmaEsperada = firmarHmacSha256(partes[0] + "." + partes[1], secretKey);
+        if (!MessageDigest.isEqual(firmaEsperada.getBytes(StandardCharsets.UTF_8),
+                partes[2].getBytes(StandardCharsets.UTF_8))) {
+            throw new AutenticacionException("Sesión inválida");
+        }
+        try {
+            byte[] json = Base64.getUrlDecoder().decode(partes[1]);
+            Map<String, Object> claims = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() { });
+            Object exp = claims.get("exp");
+            if (exp instanceof Number n && n.longValue() < Instant.now().getEpochSecond()) {
+                throw new AutenticacionException("La sesión expiró, vuelva a ingresar");
+            }
+            return claims;
+        } catch (IllegalArgumentException | java.io.IOException e) {
+            throw new AutenticacionException("Sesión inválida");
         }
     }
 

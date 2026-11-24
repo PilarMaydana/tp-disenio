@@ -46,9 +46,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/preguntas/**").permitAll()
                         // TODO CU 01: exigir autenticación
                         .requestMatchers("/api/opciones-respuesta/**").permitAll()
-                        // TODO CU 01: exigir autenticaciÃ³n de consultor (CU 025)
+                        // TODO CU 01: exigir autenticación de consultor (CU 025)
                         .requestMatchers("/api/candidatos/**").permitAll()
                         .requestMatchers("/api/evaluaciones/**").permitAll()
+                        // CU 026: el candidato se valida con su token dentro del controlador
+                        .requestMatchers("/api/cuestionarios/**").permitAll()
                         .anyRequest().permitAll()
                 );
 

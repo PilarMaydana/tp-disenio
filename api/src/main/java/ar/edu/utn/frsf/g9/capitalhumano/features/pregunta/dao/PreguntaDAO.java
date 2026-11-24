@@ -80,4 +80,19 @@ public interface PreguntaDAO extends JpaRepository<Pregunta, Long> {
     boolean existsByFactorCodigoAndEnunciado(String codigoFactor, String enunciado);
 
     List<Pregunta> findByFactorCodigo(String codigoFactor);
+
+    /**
+     * Elige al azar preguntas vigentes de un factor (CU 026 - mensaje 35).
+     *
+     * @param factorCodigo código del factor
+     * @param cantidad     cantidad de preguntas a tomar
+     * @return preguntas elegidas al azar (como máximo {@code cantidad})
+     */
+    default List<Pregunta> obtenerAleatoriasPorFactor(String factorCodigo, int cantidad) {
+        List<Pregunta> vigentes = new java.util.ArrayList<>(findByFactorCodigo(factorCodigo).stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getEliminado()))
+                .toList());
+        java.util.Collections.shuffle(vigentes);
+        return vigentes.subList(0, Math.min(cantidad, vigentes.size()));
+    }
 }

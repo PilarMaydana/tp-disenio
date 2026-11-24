@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import MiCuestionarioPage from '@/app/prototipos/(dashboard)/candidato/cuestionario/page';
+import { CompletarCuestionarioScreen } from '@/features/cu026-completar-cuestionario';
 
+/** CU 026 - Completar cuestionario. */
 export default function CandidatoCuestionarioPage() {
   return (
     <DashboardLayout>
-      <MiCuestionarioPage />
+      <CompletarCuestionarioScreen />
     </DashboardLayout>
   );
 }

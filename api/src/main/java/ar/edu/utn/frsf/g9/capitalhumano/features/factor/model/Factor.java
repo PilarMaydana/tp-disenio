@@ -123,10 +123,10 @@ public class Factor extends EntidadAuditable {
     }
 
     /**
-     * Indica si el factor cumple la condiciÃ³n para ser evaluado: poseer al menos
+     * Indica si el factor cumple la condición para ser evaluado: poseer al menos
      * 2 preguntas vigentes (no eliminadas). Ver CU 025 flujo 9.A y CU 026 paso 3.
      *
-     * @return {@code true} si el factor tiene 2 o mÃ¡s preguntas vigentes
+     * @return {@code true} si el factor tiene 2 o más preguntas vigentes
      */
     public boolean tieneMinimoDosPreguntas() {
         if (preguntas == null) {

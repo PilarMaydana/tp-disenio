@@ -1,6 +1,7 @@
 package ar.edu.utn.frsf.g9.capitalhumano.shared.web;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.auth.exception.AutenticacionException;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.exception.CuestionarioNoDisponibleException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoDuplicadoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
@@ -68,6 +69,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ReglaNegocioException.class)
     public ResponseEntity<ApiError> handleReglaNegocio(
             ReglaNegocioException ex, HttpServletRequest request) {
+        ApiError error = ApiError.of(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                ex.getCodigo(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
+     * CU 026 - 1.A / 1.B: el cuestionario venció. El código indica el nuevo estado
+     * (CUESTIONARIO_INCOMPLETO o CUESTIONARIO_SIN_CONTESTAR).
+     */
+    @ExceptionHandler(CuestionarioNoDisponibleException.class)
+    public ResponseEntity<ApiError> handleCuestionarioNoDisponible(
+            CuestionarioNoDisponibleException ex, HttpServletRequest request) {
         ApiError error = ApiError.of(
                 HttpStatus.UNPROCESSABLE_ENTITY.value(),
                 ex.getCodigo(),

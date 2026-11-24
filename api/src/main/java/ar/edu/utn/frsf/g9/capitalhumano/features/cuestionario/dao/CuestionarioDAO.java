@@ -5,11 +5,15 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuesti
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO para el acceso a datos de la entidad {@link Cuestionario}.
  */
 public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
+
+    /** Estados en los que el cuestionario todavía puede responderse. */
+    List<EstadoCuestionario> ESTADOS_ABIERTOS = List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO);
 
     /**
      * Verifica si el candidato tiene algún cuestionario vigente en alguno de los estados indicados.
@@ -21,6 +25,9 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
     boolean existsByCandidatoNroCandidatoAndEstadoInAndEliminadoFalse(Long nroCandidato,
                                                                       List<EstadoCuestionario> estados);
 
+    Optional<Cuestionario> findFirstByCandidatoNroCandidatoAndEstadoInAndEliminadoFalseOrderByIdDesc(
+            Long nroCandidato, List<EstadoCuestionario> estados);
+
     /**
      * Indica si el candidato tiene un cuestionario ACTIVO o EN_PROCESO (CU 025 - flujo 6.A).
      *
@@ -28,7 +35,17 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
      * @return {@code true} si tiene un cuestionario activo o en proceso
      */
     default boolean tieneCuestionarioActivoOProceso(Long nroCandidato) {
-        return existsByCandidatoNroCandidatoAndEstadoInAndEliminadoFalse(
-                nroCandidato, List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO));
+        return existsByCandidatoNroCandidatoAndEstadoInAndEliminadoFalse(nroCandidato, ESTADOS_ABIERTOS);
+    }
+
+    /**
+     * Obtiene el cuestionario ACTIVO o EN_PROCESO del candidato (CU 026 - mensaje 9).
+     * Un candidato puede tener un solo cuestionario abierto a la vez.
+     *
+     * @param nroCandidato número de candidato
+     * @return cuestionario abierto, o vacío si no tiene
+     */
+    default Optional<Cuestionario> obtenerActivoOEnProceso(Long nroCandidato) {
+        return findFirstByCandidatoNroCandidatoAndEstadoInAndEliminadoFalseOrderByIdDesc(nroCandidato, ESTADOS_ABIERTOS);
     }
 }

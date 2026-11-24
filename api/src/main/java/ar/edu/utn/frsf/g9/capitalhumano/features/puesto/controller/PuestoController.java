@@ -38,16 +38,16 @@ public class PuestoController {
     }
 
     /**
-     * Busca puestos vigentes por cÃ³digo, nombre y/o empresa (CU 025 - paso 8).
+     * Busca puestos vigentes por código, nombre y/o empresa (CU 025 - paso 8).
      * Sin filtros retorna todos los puestos vigentes.
      *
-     * @param codigo  filtro de cÃ³digo
+     * @param codigo  filtro de código
      * @param nombre  filtro de nombre
      * @param empresa filtro de empresa
      * @return lista de puestos
      */
     @GetMapping
-    @Operation(summary = "Buscar puestos", description = "Busca puestos por cÃ³digo, nombre y/o empresa.")
+    @Operation(summary = "Buscar puestos", description = "Busca puestos por código, nombre y/o empresa.")
     public ResponseEntity<List<PuestoBusquedaDTO>> buscar(
             @RequestParam(required = false) String codigo,
             @RequestParam(required = false) String nombre,
@@ -58,8 +58,8 @@ public class PuestoController {
     /**
      * Obtiene un puesto con sus competencias y ponderaciones requeridas (CU 025 - paso 9).
      *
-     * @param codigo cÃ³digo del puesto
-     * @return puesto con sus caracterÃ­sticas
+     * @param codigo código del puesto
+     * @return puesto con sus características
      */
     @GetMapping("/{codigo}")
     @Operation(summary = "Obtener puesto", description = "Retorna el puesto con sus competencias y ponderaciones.")
