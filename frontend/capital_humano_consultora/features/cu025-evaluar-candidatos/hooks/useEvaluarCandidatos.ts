@@ -83,21 +83,16 @@ export function useEvaluarCandidatos() {
     };
   }, []);
 
-  // ------------------------------------------------------------ Paso 4 / 4.A: Agregar sin selección
-  const avisarSinCandidatos = useCallback(() => {
-    // 4.A - No se han seleccionado candidatos: se informa y se vuelve al paso 4
-    setModal({
-      tipo: 'advertencia',
-      titulo: 'Candidatos a evaluar',
-      mensaje: 'Debe seleccionar uno o más candidatos.',
-      accion: 'cerrar',
-    });
-  }, []);
-
   // ------------------------------------------------------------ Paso 6: Siguiente
   const irAPuesto = useCallback(async () => {
     if (candidatosAEvaluar.length === 0) {
-      avisarSinCandidatos();
+      // 4.A - No se han seleccionado candidatos
+      setModal({
+        tipo: 'advertencia',
+        titulo: 'Candidatos a evaluar',
+        mensaje: 'Debe seleccionar uno o más candidatos.',
+        accion: 'cerrar',
+      });
       return;
     }
     setCargando(true);
@@ -123,7 +118,7 @@ export function useEvaluarCandidatos() {
     } finally {
       setCargando(false);
     }
-  }, [candidatosAEvaluar, puestos.length, avisarSinCandidatos]);
+  }, [candidatosAEvaluar, puestos.length]);
 
   // ------------------------------------------------------------ Paso 8-9: selección de puesto
   const seleccionarPuesto = useCallback(async (codigo: string) => {
@@ -298,7 +293,6 @@ export function useEvaluarCandidatos() {
     candidatosAEvaluar,
     setCandidatosAEvaluar,
     buscarCandidatos,
-    avisarSinCandidatos,
     irAPuesto,
     // paso 2
     puestos,

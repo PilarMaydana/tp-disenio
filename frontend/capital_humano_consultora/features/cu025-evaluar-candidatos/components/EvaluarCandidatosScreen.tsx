@@ -137,7 +137,6 @@ export const EvaluarCandidatosScreen: React.FC = () => {
             selectedItems={itemsSeleccionados}
             onChange={alCambiarSeleccion}
             withWeights={false}
-            onAddWithoutSelection={cu.avisarSinCandidatos}
           />
         </div>
       )}
