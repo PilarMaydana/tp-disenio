@@ -14,11 +14,11 @@ import java.util.Optional;
 public interface CandidatoRepository extends JpaRepository<Candidato, Long> {
 
     /**
-     * Busca un candidato vigente (no dado de baja lógica) por tipo y número de documento.
+     * Busca un candidato por tipo y número de documento.
      *
      * @param tipo tipo de documento
      * @param nroDocumento número de documento
      * @return candidato encontrado o Optional.empty()
      */
-    Optional<Candidato> findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(TipoDocumento tipo, String nroDocumento);
+    Optional<Candidato> findByTipoDocumentoAndNroDocumento(TipoDocumento tipo, String nroDocumento);
 }
