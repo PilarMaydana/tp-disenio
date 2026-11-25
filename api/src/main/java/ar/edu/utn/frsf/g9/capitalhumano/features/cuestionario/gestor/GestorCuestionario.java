@@ -366,32 +366,26 @@ public class GestorCuestionario {
      * <p>{@code verificarVigencia} se mantiene para rechazar al candidato en el momento exacto
      * en que ingresa o responde, aunque la tarea todavía no haya corrido.</p>
      *
-     * <p>CU 032: cada corrida registra en el log su inicio y su fin (fecha, hora y acción),
-     * aunque no haya cuestionarios para cerrar.</p>
-     *
      * @return cantidad de cuestionarios cerrados
      */
     @Transactional
     public int finalizarCuestionariosVencidos() {
         LocalDateTime ahora = LocalDateTime.now();
-        log.info("CU 032 - Inicio del cierre de cuestionarios vencidos ({})", ahora);
-        int incompletos = 0;
-        int sinContestar = 0;
+        int cerrados = 0;
         for (Cuestionario c : cuestionarioDAO.obtenerAbiertos()) {
             completarParametros(c);
             if (c.getEstado() == EstadoCuestionario.EN_PROCESO && c.superaTiempoMaximo(ahora)) {
                 c.cambiarEstado(EstadoCuestionario.INCOMPLETO, ahora);
-                incompletos++;
-                log.info("CU 032 - Cuestionario {} pasa a INCOMPLETO (tiempo máximo de llenado superado)", c.getId());
+                cerrados++;
             } else if (c.getEstado() == EstadoCuestionario.ACTIVO && c.superaTiempoMaximoActivo(ahora)) {
                 c.cambiarEstado(EstadoCuestionario.SIN_CONTESTAR, ahora);
-                sinContestar++;
-                log.info("CU 032 - Cuestionario {} pasa a SIN_CONTESTAR (tiempo máximo en estado activo superado)", c.getId());
+                cerrados++;
             }
         }
-        log.info("CU 032 - Fin del cierre de cuestionarios vencidos ({}): {} cerrados ({} INCOMPLETO, {} SIN_CONTESTAR)",
-                LocalDateTime.now(), incompletos + sinContestar, incompletos, sinContestar);
-        return incompletos + sinContestar;
+        if (cerrados > 0) {
+            log.info("Cuestionarios cerrados por vencimiento: {}", cerrados);
+        }
+        return cerrados;
     }
 
     // =====================================================================
