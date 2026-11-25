@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -27,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Test de integración del CU 026 - Completar cuestionario, contra la base H2 cargada con
  * {@code seed.sql} (candidatos 15 a 18 preparados para cada flujo).
+ *
+ * <p>Los vencimientos (1.A y 1.B) se simulan dentro de cada test moviendo las fechas del
+ * cuestionario, porque en el seed los cuestionarios vencidos ya están cerrados.</p>
  */
 @SpringBootTest
 @Transactional
@@ -34,8 +38,9 @@ class CompletarCuestionarioIntegrationTest {
 
     private static final long SUAREZ_ACTIVO = 16L;
     private static final long TORRES_EN_PROCESO = 15L;
-    private static final long MEDINA_TIEMPO_VENCIDO = 17L;
-    private static final long HERRERA_ACTIVO_VENCIDO = 18L;
+    /** En el seed ya figuran cerrados por vencimiento (los cerró el proceso automático). */
+    private static final long MEDINA_INCOMPLETO = 17L;
+    private static final long HERRERA_SIN_CONTESTAR = 18L;
 
     @Autowired
     private GestorCuestionario gestor;
@@ -144,9 +149,11 @@ class CompletarCuestionarioIntegrationTest {
     @Test
     @DisplayName("1.A: en proceso con el tiempo máximo superado pasa a INCOMPLETO")
     void tiempoMaximoSuperado() {
-        Long id = cuestionarioDAO.obtenerActivoOEnProceso(MEDINA_TIEMPO_VENCIDO).orElseThrow().getId();
+        Cuestionario abierto = cuestionarioDAO.obtenerActivoOEnProceso(TORRES_EN_PROCESO).orElseThrow();
+        abierto.setFechaInicio(LocalDateTime.now().minusHours(2));   // máximo: 60 minutos
+        Long id = abierto.getId();
 
-        assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(MEDINA_TIEMPO_VENCIDO))
+        assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(TORRES_EN_PROCESO))
                 .isInstanceOf(CuestionarioNoDisponibleException.class)
                 .hasMessageContaining("tiempo máximo");
 
@@ -170,13 +177,68 @@ class CompletarCuestionarioIntegrationTest {
     @Test
     @DisplayName("1.B: activo más tiempo del permitido pasa a SIN_CONTESTAR")
     void tiempoActivoSuperado() {
-        Cuestionario c = cuestionarioDAO.obtenerActivoOEnProceso(HERRERA_ACTIVO_VENCIDO).orElseThrow();
+        Cuestionario c = cuestionarioDAO.obtenerActivoOEnProceso(SUAREZ_ACTIVO).orElseThrow();
+        c.setFechaCreacion(LocalDateTime.now().minusDays(10));   // máximo: 168 horas
 
-        assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(HERRERA_ACTIVO_VENCIDO))
+        assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(SUAREZ_ACTIVO))
                 .isInstanceOf(CuestionarioNoDisponibleException.class)
                 .extracting(e -> ((CuestionarioNoDisponibleException) e).getCodigo())
                 .isEqualTo(CuestionarioNoDisponibleException.SIN_CONTESTAR);
         assertThat(c.getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
+    }
+
+    @Test
+    @DisplayName("Cierre automático: cierra solo los vencidos (EN_PROCESO -> INCOMPLETO, ACTIVO -> SIN_CONTESTAR)")
+    void finalizarCuestionariosVencidos() {
+        Cuestionario torres = cuestionarioDAO.obtenerActivoOEnProceso(TORRES_EN_PROCESO).orElseThrow();
+        Cuestionario suarez = cuestionarioDAO.obtenerActivoOEnProceso(SUAREZ_ACTIVO).orElseThrow();
+        torres.setFechaInicio(LocalDateTime.now().minusHours(2));
+        suarez.setFechaCreacion(LocalDateTime.now().minusDays(10));
+
+        int cerrados = gestor.finalizarCuestionariosVencidos();
+
+        assertThat(cerrados).isEqualTo(2);
+        assertThat(torres.getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
+        assertThat(suarez.getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
+        assertThat(torres.getFechaCambioEstado()).isNotNull();
+        assertThat(suarez.getFechaCambioEstado()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Cierre automático: no toca los cuestionarios que siguen vigentes")
+    void finalizarCuestionariosVencidosSinVencidos() {
+        assertThat(gestor.finalizarCuestionariosVencidos()).isZero();
+
+        assertThat(cuestionarioDAO.obtenerActivoOEnProceso(TORRES_EN_PROCESO).orElseThrow().getEstado())
+                .isEqualTo(EstadoCuestionario.EN_PROCESO);
+        assertThat(cuestionarioDAO.obtenerActivoOEnProceso(SUAREZ_ACTIVO).orElseThrow().getEstado())
+                .isEqualTo(EstadoCuestionario.ACTIVO);
+    }
+
+    @Test
+    @DisplayName("Seed: los cuestionarios vencidos ya figuran cerrados y no permiten ingresar")
+    void vencidosDelSeedCerrados() {
+        assertThat(cuestionarioDAO.obtenerActivoOEnProceso(MEDINA_INCOMPLETO)).isEmpty();
+        assertThat(cuestionarioDAO.obtenerActivoOEnProceso(HERRERA_SIN_CONTESTAR)).isEmpty();
+        assertThat(cuestionarioDAO.findById(13L).orElseThrow().getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
+        assertThat(cuestionarioDAO.findById(10L).orElseThrow().getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
+
+        assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(MEDINA_INCOMPLETO))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    @DisplayName("fueAprobado: una competencia del puesto sin resultado cuenta como no aprobada")
+    void noApruebaSinTodasLasCompetencias() {
+        Cuestionario sosa = cuestionarioDAO.findById(4L).orElseThrow();
+        assertThat(sosa.getResultado().fueAprobado()).isTrue();
+
+        // Se quita la competencia COMUNICACIÓN: la de TEC sigue superando el mínimo
+        sosa.getResultado().getResultadosCompetencia()
+                .removeIf(rc -> rc.getCaracteristicaPuesto().getCompetencia().getCodigo().startsWith("COM"));
+
+        assertThat(sosa.getResultado().getResultadosCompetencia()).hasSize(1);
+        assertThat(sosa.getResultado().fueAprobado()).isFalse();
     }
 
     @Test

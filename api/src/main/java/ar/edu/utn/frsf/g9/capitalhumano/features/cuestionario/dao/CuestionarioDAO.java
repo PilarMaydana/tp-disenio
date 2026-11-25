@@ -2,7 +2,11 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Cuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuestionario;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,5 +51,52 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
      */
     default Optional<Cuestionario> obtenerActivoOEnProceso(Long nroCandidato) {
         return findFirstByCandidatoNroCandidatoAndEstadoInAndEliminadoFalseOrderByIdDesc(nroCandidato, ESTADOS_ABIERTOS);
+    }
+
+    List<Cuestionario> findByEstadoInAndEliminadoFalse(List<EstadoCuestionario> estados);
+
+    /**
+     * Obtiene el cuestionario bloqueando su fila hasta el fin de la transacción (CU 026).
+     *
+     * <p>Serializa los pedidos simultáneos sobre el mismo cuestionario (doble click en
+     * «Aceptar» o en «Siguiente»/«Finalizar»): el segundo espera al primero y luego lee el
+     * estado ya actualizado, en lugar de armar los bloques o guardar las respuestas dos veces.</p>
+     *
+     * @param id identificador del cuestionario
+     * @return cuestionario encontrado o vacío
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Cuestionario c WHERE c.id = :id")
+    Optional<Cuestionario> bloquearPorId(@Param("id") Long id);
+
+    @Query("SELECT c.id FROM Cuestionario c WHERE c.candidato.nroCandidato = :nroCandidato "
+            + "AND c.estado IN :estados AND c.eliminado = false ORDER BY c.id DESC")
+    List<Long> buscarIdsPorCandidatoYEstado(@Param("nroCandidato") Long nroCandidato,
+                                            @Param("estados") List<EstadoCuestionario> estados);
+
+    /**
+     * Obtiene y bloquea el cuestionario ACTIVO o EN_PROCESO del candidato (CU 026 - mensaje 9).
+     *
+     * <p>Primero se busca solo el id y luego se lee la fila con bloqueo, para que la entidad
+     * se cargue después de obtener el bloqueo y refleje los cambios de un pedido anterior.</p>
+     *
+     * @param nroCandidato número de candidato
+     * @return cuestionario abierto bloqueado, o vacío si no tiene
+     */
+    default Optional<Cuestionario> bloquearActivoOEnProceso(Long nroCandidato) {
+        return buscarIdsPorCandidatoYEstado(nroCandidato, ESTADOS_ABIERTOS).stream()
+                .findFirst()
+                .flatMap(this::bloquearPorId)
+                .filter(c -> ESTADOS_ABIERTOS.contains(c.getEstado()));
+    }
+
+    /**
+     * Obtiene los cuestionarios ACTIVO o EN_PROCESO, candidatos a cerrarse por vencimiento
+     * (diagrama de clases - {@code finalizarVencidos()}).
+     *
+     * @return cuestionarios abiertos
+     */
+    default List<Cuestionario> obtenerAbiertos() {
+        return findByEstadoInAndEliminadoFalse(ESTADOS_ABIERTOS);
     }
 }

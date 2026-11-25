@@ -64,12 +64,6 @@ public class Cuestionario extends EntidadAuditable {
     @Column(name = "fecha_finalizacion")
     private LocalDateTime fechaFinalizacion;
 
-    @Column(name = "tiempo_restante_segundos")
-    private Integer tiempoRestanteSegundos;
-
-    @Column(name = "ultimo_bloque_respondido")
-    private Integer ultimoBloqueRespondido;
-
     // ---------------------------------------------------------------- CU 026
     @Column(name = "fecha_ultimo_ingreso")
     private LocalDateTime fechaUltimoIngreso;
@@ -172,22 +166,6 @@ public class Cuestionario extends EntidadAuditable {
 
     public void setFechaFinalizacion(LocalDateTime fechaFinalizacion) {
         this.fechaFinalizacion = fechaFinalizacion;
-    }
-
-    public Integer getTiempoRestanteSegundos() {
-        return tiempoRestanteSegundos;
-    }
-
-    public void setTiempoRestanteSegundos(Integer tiempoRestanteSegundos) {
-        this.tiempoRestanteSegundos = tiempoRestanteSegundos;
-    }
-
-    public Integer getUltimoBloqueRespondido() {
-        return ultimoBloqueRespondido;
-    }
-
-    public void setUltimoBloqueRespondido(Integer ultimoBloqueRespondido) {
-        this.ultimoBloqueRespondido = ultimoBloqueRespondido;
     }
 
     public Evaluacion getEvaluacion() {

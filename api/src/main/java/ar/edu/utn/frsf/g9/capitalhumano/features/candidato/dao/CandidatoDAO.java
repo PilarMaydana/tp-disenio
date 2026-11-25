@@ -2,7 +2,11 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.candidato.dao;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.candidato.model.Candidato;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.util.TextoUtils;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +23,20 @@ public interface CandidatoDAO extends JpaRepository<Candidato, Long> {
      * @return candidato encontrado o vacío
      */
     Optional<Candidato> findByNroCandidatoAndEliminadoFalse(Long nroCandidato);
+
+    /**
+     * Obtiene el candidato bloqueando su fila hasta el fin de la transacción (CU 025 - paso 13).
+     *
+     * <p>Evita que dos confirmaciones simultáneas (por ejemplo, un doble click en «Finalizar»)
+     * pasen a la vez el control del flujo 6.A y le generen dos cuestionarios activos al mismo
+     * candidato: la segunda espera a que termine la primera y luego encuentra el cuestionario.</p>
+     *
+     * @param nroCandidato número de candidato
+     * @return candidato encontrado o vacío
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Candidato c WHERE c.nroCandidato = :nroCandidato AND c.eliminado = false")
+    Optional<Candidato> bloquearPorNroCandidato(@Param("nroCandidato") Long nroCandidato);
 
     /**
      * Lista todos los candidatos vigentes ordenados por apellido y nombre.
