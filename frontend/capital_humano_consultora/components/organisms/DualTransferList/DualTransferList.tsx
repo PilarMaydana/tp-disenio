@@ -112,6 +112,12 @@ export interface DualTransferListProps {
   onChange: (newSelectedItems: TransferItem[]) => void;
   withWeights?: boolean; // Ponderaciones de 0 a 10
   className?: string;
+  /**
+   * Si se indica, «Agregar» queda habilitado aunque no haya ítems tildados y, al presionarlo
+   * sin selección, se invoca este callback (por ejemplo, para informar un flujo alternativo).
+   * Si no se indica, el botón se deshabilita mientras no haya ítems tildados.
+   */
+  onAddWithoutSelection?: () => void;
 }
 
 export const DualTransferList: React.FC<DualTransferListProps> = ({
@@ -122,6 +128,7 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
   onChange,
   withWeights = true,
   className = '',
+  onAddWithoutSelection,
 }) => {
   // Items seleccionados temporalmente en el panel izquierdo para mover
   const [checkedAvailableIds, setCheckedAvailableIds] = useState<string[]>([]);
@@ -154,7 +161,10 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
   };
 
   const handleAdd = () => {
-    if (checkedAvailableIds.length === 0) return;
+    if (checkedAvailableIds.length === 0) {
+      onAddWithoutSelection?.();
+      return;
+    }
     const itemsToAdd: TransferItem[] = unselectedAvailable
       .filter((i) => checkedAvailableIds.includes(i.id))
       .map((i) => ({ ...i, weight: i.weight }));
@@ -244,7 +254,7 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
             type="button"
             variant="secondary-soft"
             onClick={handleAdd}
-            disabled={checkedAvailableIds.length === 0}
+            disabled={checkedAvailableIds.length === 0 && !onAddWithoutSelection}
             leftIcon="plus"
           >
             Agregar ({checkedAvailableIds.length})
