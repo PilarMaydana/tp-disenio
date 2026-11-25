@@ -143,7 +143,10 @@ export function useEvaluarCandidatos() {
         setModal({
           tipo: 'error',
           titulo: 'Competencias que no pueden ser evaluadas',
-          mensaje: `La función "${detalle.nombre}" posee competencias que no tienen al menos un factor con 2 o más preguntas:`,
+          mensaje:
+            validacion.competenciasNoEvaluables.length === 0
+              ? `La función "${detalle.nombre}" no posee competencias para evaluar.`
+              : `La función "${detalle.nombre}" posee competencias que no tienen al menos un factor con 2 o más preguntas:`,
           detalle: validacion.competenciasNoEvaluables,
           accion: 'finalizar-cu',
         });
