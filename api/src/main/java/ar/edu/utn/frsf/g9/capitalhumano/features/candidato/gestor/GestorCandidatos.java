@@ -214,7 +214,8 @@ public class GestorCandidatos {
     public ValidacionPuestoDTO validarCompetenciasEvaluables(String puestoCodigo) {
         Puesto puesto = obtenerPuesto(puestoCodigo);
         List<String> noEvaluables = competenciasNoEvaluables(puesto);
-        return new ValidacionPuestoDTO(puesto.getCodigo(), noEvaluables.isEmpty(), noEvaluables);
+        boolean evaluable = !puesto.getCaracteristicas().isEmpty() && noEvaluables.isEmpty();
+        return new ValidacionPuestoDTO(puesto.getCodigo(), evaluable, noEvaluables);
     }
 
     private List<String> competenciasNoEvaluables(Puesto puesto) {
@@ -432,6 +433,10 @@ public class GestorCandidatos {
     }
 
     private void validarPuestoEvaluable(Puesto puesto) {
+        if (puesto.getCaracteristicas().isEmpty()) {
+            // Sin competencias no hay preguntas que seleccionar: el cuestionario nunca podría iniciarse
+            throw new ReglaNegocioException("La función o puesto no posee competencias para evaluar");
+        }
         List<String> noEvaluables = competenciasNoEvaluables(puesto);
         if (!noEvaluables.isEmpty()) {
             throw new ReglaNegocioException(

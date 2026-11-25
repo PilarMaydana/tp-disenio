@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/services/apiClient';
 import { completarCuestionarioService } from '../services/completarCuestionarioService';
 import { emitirAlertaSonora } from '../services/alertaSonora';
@@ -37,6 +37,12 @@ const mensajeDe = (error: unknown): string =>
 export function useCompletarCuestionario() {
   const [fase, setFase] = useState<FaseCuestionario>('cargando');
   const [enviando, setEnviando] = useState(false);
+  /**
+   * Pedido en curso («Aceptar» o «Siguiente»/«Finalizar»). El estado "enviando" recién se
+   * aplica en el próximo render, por eso se usa una referencia que se actualiza en el acto
+   * y evita que un doble click envíe dos pedidos (y descuente dos accesos).
+   */
+  const enCursoRef = useRef(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   const [instrucciones, setInstrucciones] = useState<Instrucciones | null>(null);
@@ -108,6 +114,8 @@ export function useCompletarCuestionario() {
 
   // ------------------------------------------------------------ Paso 2: Aceptar / Cancelar
   const aceptar = useCallback(async () => {
+    if (enCursoRef.current) return;
+    enCursoRef.current = true;
     setEnviando(true);
     setMensaje(null);
     try {
@@ -115,6 +123,7 @@ export function useCompletarCuestionario() {
     } catch (error) {
       manejarError(error);
     } finally {
+      enCursoRef.current = false;
       setEnviando(false);
     }
   }, [mostrarPaso, manejarError]);
@@ -131,9 +140,13 @@ export function useCompletarCuestionario() {
   const enviarBloque = useCallback(async () => {
     if (!paso || paso.numeroBloque === null) return;
 
+    // Con el tiempo agotado no se valida localmente el 6.A: se envía el bloque tal como está
+    // para que el backend registre el vencimiento (1.A, el cuestionario pasa a INCOMPLETO).
+    const tiempoAgotado = segundos === 0;
+
     // 6.A - se indica qué preguntas faltan y se conservan las respuestas ya marcadas
     const sinResponder = paso.preguntas.filter((p) => respuestas[p.preguntaAsignadaId] === undefined);
-    if (sinResponder.length > 0) {
+    if (!tiempoAgotado && sinResponder.length > 0) {
       setFaltantes(sinResponder.map((p) => p.preguntaAsignadaId));
       setMensaje(
         `Existen preguntas sin responder: ${sinResponder.map((p) => `Pregunta ${p.nroOrden}`).join(', ')}.`
@@ -142,21 +155,26 @@ export function useCompletarCuestionario() {
       return;
     }
 
+    if (enCursoRef.current) return;
+    enCursoRef.current = true;
     setEnviando(true);
     setMensaje(null);
     try {
       const siguiente = await completarCuestionarioService.responderBloque(
         paso.cuestionarioId,
         paso.numeroBloque,
-        paso.preguntas.map((p) => ({ preguntaAsignadaId: p.preguntaAsignadaId, opcionId: respuestas[p.preguntaAsignadaId] }))
+        paso.preguntas
+          .filter((p) => respuestas[p.preguntaAsignadaId] !== undefined)
+          .map((p) => ({ preguntaAsignadaId: p.preguntaAsignadaId, opcionId: respuestas[p.preguntaAsignadaId] }))
       );
       mostrarPaso(siguiente);
     } catch (error) {
       manejarError(error);
     } finally {
+      enCursoRef.current = false;
       setEnviando(false);
     }
-  }, [paso, respuestas, mostrarPaso, manejarError]);
+  }, [paso, respuestas, segundos, mostrarPaso, manejarError]);
 
   return {
     fase,

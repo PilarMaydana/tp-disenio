@@ -85,6 +85,28 @@ class CompletarCuestionarioIntegrationTest {
     }
 
     @Test
+    @DisplayName("6.A: una opción que pertenece a otra pregunta se rechaza como no respondida")
+    void opcionDeOtraPregunta() {
+        CuestionarioWizardDTO paso = gestor.iniciarOReanudarCuestionario(SUAREZ_ACTIVO);
+        PreguntaCuestionarioDTO primera = paso.preguntas().get(0);
+        PreguntaCuestionarioDTO segunda = paso.preguntas().get(1);
+        Long opcionDeLaSegunda = segunda.opciones().get(0).id();
+
+        // A la pregunta 1 se le envía una opción válida pero de la pregunta 2 (respuesta adulterada)
+        List<RespuestaBloqueDTO> adulterada = List.of(
+                new RespuestaBloqueDTO(primera.preguntaAsignadaId(), opcionDeLaSegunda),
+                new RespuestaBloqueDTO(segunda.preguntaAsignadaId(), opcionDeLaSegunda));
+
+        assertThatThrownBy(() -> gestor.responderBloque(SUAREZ_ACTIVO, paso.cuestionarioId(), 1, adulterada))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("Pregunta 1")
+                .hasMessageNotContaining("Pregunta 2");
+
+        // El bloque no se guardó: sigue pendiente el bloque 1
+        assertThat(gestor.iniciarOReanudarCuestionario(SUAREZ_ACTIVO).numeroBloque()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("6.A: si faltan respuestas se informa cuáles y no se guarda el bloque")
     void preguntasSinResponder() {
         CuestionarioWizardDTO paso = gestor.iniciarOReanudarCuestionario(SUAREZ_ACTIVO);

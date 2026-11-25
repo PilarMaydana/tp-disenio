@@ -204,6 +204,29 @@ class GestorCandidatosTest {
         assertThat(resultado.competenciasNoEvaluables()).isEmpty();
     }
 
+    @Test
+    @DisplayName("9.A: un puesto sin competencias no es evaluable")
+    void validarCompetencias_puestoSinCompetencias() {
+        when(puestoDAO.findByCodigoAndEliminadoFalse("BACK-01")).thenReturn(Optional.of(puestoCon()));
+
+        ValidacionPuestoDTO resultado = gestor.validarCompetenciasEvaluables("BACK-01");
+
+        assertThat(resultado.evaluable()).isFalse();
+        assertThat(resultado.competenciasNoEvaluables()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Preparar con un puesto sin competencias lanza ReglaNegocioException")
+    void preparar_puestoSinCompetencias() {
+        Candidato juan = candidato(1, "PÉREZ", "JUAN");
+        candidatoDisponible(juan);
+        when(puestoDAO.findByCodigoAndEliminadoFalse("BACK-01")).thenReturn(Optional.of(puestoCon()));
+
+        assertThatThrownBy(() -> gestor.prepararEvaluacion(new EvaluarCandidatosRequestDTO(List.of(1L), "BACK-01")))
+                .isInstanceOf(ReglaNegocioException.class)
+                .hasMessageContaining("no posee competencias");
+    }
+
     // ----------------------------------------------------------- 10.A
 
     @Test
