@@ -173,7 +173,9 @@ public class GestorCuestionario {
      */
     @Transactional(noRollbackFor = CuestionarioNoDisponibleException.class)
     public CuestionarioWizardDTO iniciarOReanudarCuestionario(Long nroCandidato) {
-        Cuestionario cuestionario = obtenerAbierto(nroCandidato);
+        Cuestionario cuestionario = cuestionarioDAO.bloquearActivoOEnProceso(nroCandidato)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No posee un cuestionario activo o en proceso"));
         LocalDateTime ahora = LocalDateTime.now();
         completarParametros(cuestionario);
 
@@ -248,7 +250,7 @@ public class GestorCuestionario {
     @Transactional(noRollbackFor = CuestionarioNoDisponibleException.class)
     public CuestionarioWizardDTO responderBloque(Long nroCandidato, Long cuestionarioId, Integer numeroBloque,
                                                  List<RespuestaBloqueDTO> respuestas) {
-        Cuestionario cuestionario = cuestionarioDAO.findById(cuestionarioId)
+        Cuestionario cuestionario = cuestionarioDAO.bloquearPorId(cuestionarioId)
                 .filter(c -> c.getCandidato().getNroCandidato().equals(nroCandidato))
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cuestionario", cuestionarioId));
         if (cuestionario.getEstado() != EstadoCuestionario.EN_PROCESO) {
