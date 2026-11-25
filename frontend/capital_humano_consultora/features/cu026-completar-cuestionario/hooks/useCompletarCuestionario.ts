@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/services/apiClient';
 import { completarCuestionarioService } from '../services/completarCuestionarioService';
 import { emitirAlertaSonora } from '../services/alertaSonora';
@@ -37,6 +37,12 @@ const mensajeDe = (error: unknown): string =>
 export function useCompletarCuestionario() {
   const [fase, setFase] = useState<FaseCuestionario>('cargando');
   const [enviando, setEnviando] = useState(false);
+  /**
+   * Pedido en curso («Aceptar» o «Siguiente»/«Finalizar»). El estado "enviando" recién se
+   * aplica en el próximo render, por eso se usa una referencia que se actualiza en el acto
+   * y evita que un doble click envíe dos pedidos (y descuente dos accesos).
+   */
+  const enCursoRef = useRef(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   const [instrucciones, setInstrucciones] = useState<Instrucciones | null>(null);
@@ -108,6 +114,8 @@ export function useCompletarCuestionario() {
 
   // ------------------------------------------------------------ Paso 2: Aceptar / Cancelar
   const aceptar = useCallback(async () => {
+    if (enCursoRef.current) return;
+    enCursoRef.current = true;
     setEnviando(true);
     setMensaje(null);
     try {
@@ -115,6 +123,7 @@ export function useCompletarCuestionario() {
     } catch (error) {
       manejarError(error);
     } finally {
+      enCursoRef.current = false;
       setEnviando(false);
     }
   }, [mostrarPaso, manejarError]);
@@ -142,6 +151,8 @@ export function useCompletarCuestionario() {
       return;
     }
 
+    if (enCursoRef.current) return;
+    enCursoRef.current = true;
     setEnviando(true);
     setMensaje(null);
     try {
@@ -154,6 +165,7 @@ export function useCompletarCuestionario() {
     } catch (error) {
       manejarError(error);
     } finally {
+      enCursoRef.current = false;
       setEnviando(false);
     }
   }, [paso, respuestas, mostrarPaso, manejarError]);
