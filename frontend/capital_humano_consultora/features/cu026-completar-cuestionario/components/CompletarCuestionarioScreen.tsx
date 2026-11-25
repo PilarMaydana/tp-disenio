@@ -217,7 +217,8 @@ export const CompletarCuestionarioScreen: React.FC = () => {
 
           {cu.segundos === 0 && (
             <p className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-800">
-              Se agotó el tiempo máximo para completar el cuestionario.
+              Se agotó el tiempo máximo para completar el cuestionario. Ya no es posible responder;
+              presione «{cu.paso.numeroBloque === cu.paso.totalBloques ? 'Finalizar' : 'Siguiente'}» para cerrarlo.
             </p>
           )}
 
@@ -228,7 +229,7 @@ export const CompletarCuestionarioScreen: React.FC = () => {
                 pregunta={p}
                 elegida={cu.respuestas[p.preguntaAsignadaId]}
                 falta={cu.faltantes.includes(p.preguntaAsignadaId)}
-                deshabilitada={cu.enviando}
+                deshabilitada={cu.enviando || cu.segundos === 0}
                 onElegir={(opcionId) => cu.elegirOpcion(p.preguntaAsignadaId, opcionId)}
               />
             ))}

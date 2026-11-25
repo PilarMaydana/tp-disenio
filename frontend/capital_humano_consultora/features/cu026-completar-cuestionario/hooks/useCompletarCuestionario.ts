@@ -140,9 +140,13 @@ export function useCompletarCuestionario() {
   const enviarBloque = useCallback(async () => {
     if (!paso || paso.numeroBloque === null) return;
 
+    // Con el tiempo agotado no se valida localmente el 6.A: se envía el bloque tal como está
+    // para que el backend registre el vencimiento (1.A, el cuestionario pasa a INCOMPLETO).
+    const tiempoAgotado = segundos === 0;
+
     // 6.A - se indica qué preguntas faltan y se conservan las respuestas ya marcadas
     const sinResponder = paso.preguntas.filter((p) => respuestas[p.preguntaAsignadaId] === undefined);
-    if (sinResponder.length > 0) {
+    if (!tiempoAgotado && sinResponder.length > 0) {
       setFaltantes(sinResponder.map((p) => p.preguntaAsignadaId));
       setMensaje(
         `Existen preguntas sin responder: ${sinResponder.map((p) => `Pregunta ${p.nroOrden}`).join(', ')}.`
@@ -159,7 +163,9 @@ export function useCompletarCuestionario() {
       const siguiente = await completarCuestionarioService.responderBloque(
         paso.cuestionarioId,
         paso.numeroBloque,
-        paso.preguntas.map((p) => ({ preguntaAsignadaId: p.preguntaAsignadaId, opcionId: respuestas[p.preguntaAsignadaId] }))
+        paso.preguntas
+          .filter((p) => respuestas[p.preguntaAsignadaId] !== undefined)
+          .map((p) => ({ preguntaAsignadaId: p.preguntaAsignadaId, opcionId: respuestas[p.preguntaAsignadaId] }))
       );
       mostrarPaso(siguiente);
     } catch (error) {
@@ -168,7 +174,7 @@ export function useCompletarCuestionario() {
       enCursoRef.current = false;
       setEnviando(false);
     }
-  }, [paso, respuestas, mostrarPaso, manejarError]);
+  }, [paso, respuestas, segundos, mostrarPaso, manejarError]);
 
   return {
     fase,
