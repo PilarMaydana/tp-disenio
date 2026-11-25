@@ -20,10 +20,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   disabled = false,
   className = '',
 }) => {
-  // Id único por instancia: el label puede ser un ReactNode (antes generaba "cb-[object-object]",
-  // repetido entre checkboxes) y dos checkboxes con el mismo texto no deben compartir id.
-  const autoId = React.useId();
-  const generatedId = id ?? autoId;
+  const generatedId = id || (label ? `cb-${String(label).replace(/\s+/g, '-').toLowerCase()}` : undefined);
 
   return (
     <label
@@ -39,10 +36,10 @@ export const Checkbox: React.FC<CheckboxProps> = ({
           checked={checked}
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only peer"
+          className="sr-only"
         />
         <div
-          className={`w-6 h-6 rounded-md border transition-all flex items-center justify-center peer-focus-visible:ring-2 peer-focus-visible:ring-[#3F2581] peer-focus-visible:ring-offset-1 ${
+          className={`w-6 h-6 rounded-md border transition-all flex items-center justify-center ${
             checked
               ? 'bg-[#CDCEE6] border-[#3F2581] shadow-xs'
               : 'bg-white border-[#BDBEE0] hover:border-[#3F2581]'
