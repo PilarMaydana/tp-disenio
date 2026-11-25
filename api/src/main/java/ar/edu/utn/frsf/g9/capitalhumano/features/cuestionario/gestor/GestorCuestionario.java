@@ -350,6 +350,43 @@ public class GestorCuestionario {
     }
 
     // =====================================================================
+    // Cierre por vencimiento (flujos 1.A y 1.B sin que el candidato ingrese)
+    // =====================================================================
+
+    /**
+     * Cierra los cuestionarios abiertos que ya no pueden completarse, aunque el candidato
+     * no vuelva a ingresar (lo ejecuta periódicamente {@link CierreCuestionariosVencidosJob}):
+     * <ul>
+     *   <li>EN_PROCESO con el tiempo máximo de llenado superado → INCOMPLETO (1.A).</li>
+     *   <li>ACTIVO con el tiempo máximo en estado activo superado → SIN_CONTESTAR (1.B).</li>
+     * </ul>
+     *
+     * <p>{@code verificarVigencia} se mantiene para rechazar al candidato en el momento exacto
+     * en que ingresa o responde, aunque la tarea todavía no haya corrido.</p>
+     *
+     * @return cantidad de cuestionarios cerrados
+     */
+    @Transactional
+    public int finalizarCuestionariosVencidos() {
+        LocalDateTime ahora = LocalDateTime.now();
+        int cerrados = 0;
+        for (Cuestionario c : cuestionarioDAO.obtenerAbiertos()) {
+            completarParametros(c);
+            if (c.getEstado() == EstadoCuestionario.EN_PROCESO && c.superaTiempoMaximo(ahora)) {
+                c.cambiarEstado(EstadoCuestionario.INCOMPLETO, ahora);
+                cerrados++;
+            } else if (c.getEstado() == EstadoCuestionario.ACTIVO && c.superaTiempoMaximoActivo(ahora)) {
+                c.cambiarEstado(EstadoCuestionario.SIN_CONTESTAR, ahora);
+                cerrados++;
+            }
+        }
+        if (cerrados > 0) {
+            log.info("Cuestionarios cerrados por vencimiento: {}", cerrados);
+        }
+        return cerrados;
+    }
+
+    // =====================================================================
     // Auxiliares
     // =====================================================================
 

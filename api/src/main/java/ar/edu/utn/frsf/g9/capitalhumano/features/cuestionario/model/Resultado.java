@@ -1,5 +1,6 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.CaracteristicaPuesto;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,13 +68,30 @@ public class Resultado {
 
     /**
      * Indica si el candidato alcanzó la ponderación mínima requerida en todas las
-     * competencias evaluadas (criterio del orden de mérito del CU 028).
+     * competencias del puesto (criterio del orden de mérito del CU 028).
      *
-     * @return {@code true} si superó todos los mínimos
+     * <p>Una competencia del puesto que no tiene resultado (no pudo evaluarse) cuenta como
+     * no aprobada, para que el candidato no figure como aprobado sin haberla rendido.</p>
+     *
+     * @return {@code true} si superó el mínimo de todas las competencias del puesto
      */
     public boolean fueAprobado() {
-        return !resultadosCompetencia.isEmpty()
-                && resultadosCompetencia.stream().allMatch(ResultadoCompetencia::superaMinimoRequerido);
+        if (resultadosCompetencia.isEmpty()
+                || !resultadosCompetencia.stream().allMatch(ResultadoCompetencia::superaMinimoRequerido)) {
+            return false;
+        }
+        List<CaracteristicaPuesto> requeridas = caracteristicasDelPuesto();
+        return requeridas.stream().allMatch(cp -> resultadosCompetencia.stream()
+                .anyMatch(rc -> rc.getCaracteristicaPuesto() == cp
+                        || (cp.getId() != null && cp.getId().equals(rc.getCaracteristicaPuesto().getId()))));
+    }
+
+    private List<CaracteristicaPuesto> caracteristicasDelPuesto() {
+        if (cuestionario == null || cuestionario.getEvaluacion() == null
+                || cuestionario.getEvaluacion().getPuesto() == null) {
+            return List.of();
+        }
+        return cuestionario.getEvaluacion().getPuesto().getCaracteristicas();
     }
 
     public Long getId() {

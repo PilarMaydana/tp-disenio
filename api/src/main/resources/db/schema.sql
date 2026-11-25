@@ -123,8 +123,6 @@ CREATE TABLE IF NOT EXISTS cuestionario (
     fecha_creacion TIMESTAMP,
     fecha_inicio TIMESTAMP,
     fecha_finalizacion TIMESTAMP,
-    tiempo_restante_segundos INT,
-    ultimo_bloque_respondido INT,
     -- CU 026: control de accesos y tiempos (los parámetros se copian de la configuración al crearlo)
     fecha_ultimo_ingreso TIMESTAMP,
     fecha_cambio_estado TIMESTAMP,

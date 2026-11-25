@@ -48,4 +48,16 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, Long> {
     default Optional<Cuestionario> obtenerActivoOEnProceso(Long nroCandidato) {
         return findFirstByCandidatoNroCandidatoAndEstadoInAndEliminadoFalseOrderByIdDesc(nroCandidato, ESTADOS_ABIERTOS);
     }
+
+    List<Cuestionario> findByEstadoInAndEliminadoFalse(List<EstadoCuestionario> estados);
+
+    /**
+     * Obtiene los cuestionarios ACTIVO o EN_PROCESO, candidatos a cerrarse por vencimiento
+     * (diagrama de clases - {@code finalizarVencidos()}).
+     *
+     * @return cuestionarios abiertos
+     */
+    default List<Cuestionario> obtenerAbiertos() {
+        return findByEstadoInAndEliminadoFalse(ESTADOS_ABIERTOS);
+    }
 }

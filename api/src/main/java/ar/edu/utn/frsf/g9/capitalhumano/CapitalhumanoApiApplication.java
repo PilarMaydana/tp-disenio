@@ -3,6 +3,7 @@ package ar.edu.utn.frsf.g9.capitalhumano;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Clase principal de la aplicación Capit@l Humano.
@@ -10,8 +11,11 @@ import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConf
  * <p>Arranca el contenedor Spring Boot y habilita la autoconfiguración.
  * Se excluye {@link EmbeddedLdapAutoConfiguration} porque el LDAP embebido
  * se configurará manualmente al implementar el CU 01.</p>
+ *
+ * <p>{@link EnableScheduling} habilita las tareas programadas (cierre de cuestionarios vencidos).</p>
  */
 @SpringBootApplication(exclude = {EmbeddedLdapAutoConfiguration.class})
+@EnableScheduling
 public class CapitalhumanoApiApplication {
 
     public static void main(String[] args) {
