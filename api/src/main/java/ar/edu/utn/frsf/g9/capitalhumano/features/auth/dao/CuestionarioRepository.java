@@ -22,9 +22,9 @@ public interface CuestionarioRepository extends JpaRepository<Cuestionario, Long
      * @param candidato candidato asociado al cuestionario
      * @param estados lista de estados válidos (ej. ACTIVO, EN_PROCESO)
      * @param claveAcceso clave de acceso al cuestionario
-     * @return cuestionario encontrado o Optional.empty(); si hubiera más de uno, el más reciente
+     * @return cuestionario encontrado o Optional.empty()
      */
-    Optional<Cuestionario> findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+    Optional<Cuestionario> findByCandidatoAndEstadoInAndClaveAcceso(
             Candidato candidato,
             List<EstadoCuestionario> estados,
             String claveAcceso

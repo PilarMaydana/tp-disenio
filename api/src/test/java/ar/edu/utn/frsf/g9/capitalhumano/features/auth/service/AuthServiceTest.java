@@ -117,7 +117,7 @@ class AuthServiceTest {
 
             when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findByCandidatoAndEstadoInAndClaveAcceso(
                     eq(candidatoMock),
                     eq(List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO)),
                     eq("CLAVE123")
@@ -140,7 +140,7 @@ class AuthServiceTest {
 
             when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findByCandidatoAndEstadoInAndClaveAcceso(
                     any(Candidato.class), any(), eq("CLAVE123")
             )).thenReturn(Optional.of(cuestionarioMock));
 
@@ -171,7 +171,7 @@ class AuthServiceTest {
 
             when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findByCandidatoAndEstadoInAndClaveAcceso(
                     any(Candidato.class), any(), eq("WRONGKEY")
             )).thenReturn(Optional.empty());
 

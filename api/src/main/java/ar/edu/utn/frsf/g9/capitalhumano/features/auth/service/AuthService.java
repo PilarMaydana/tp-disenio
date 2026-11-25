@@ -110,7 +110,7 @@ public class AuthService {
         List<EstadoCuestionario> estadosValidos = List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO);
 
         Cuestionario cuestionario = cuestionarioRepository
-                .findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(candidato, estadosValidos, request.getClave().trim())
+                .findByCandidatoAndEstadoInAndClaveAcceso(candidato, estadosValidos, request.getClave().trim())
                 .orElseThrow(() -> {
                     log.warn("No se encontró cuestionario ACTIVO o EN_PROCESO con la clave provista para el candidato ID {}", candidato.getId());
                     return new AutenticacionException(ERROR_CANDIDATO);
