@@ -8,6 +8,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,6 +16,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.List;
@@ -125,6 +127,39 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Un parámetro de la URL no tiene el tipo esperado (por ejemplo, {@code /evaluaciones/abc/excel}).
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        ApiError error = ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                "PARAMETRO_INVALIDO",
+                "El valor '" + ex.getValue() + "' no es valido para el parametro '" + ex.getName() + "'",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Respaldo ante operaciones simultáneas que violan una restricción de la base
+     * (por ejemplo, dos envíos del mismo bloque): se informa un conflicto en lugar de un error interno.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Conflicto de integridad de datos en [{}]: {}", request.getRequestURI(),
+                ex.getMostSpecificCause().getMessage());
+        ApiError error = ApiError.of(
+                HttpStatus.CONFLICT.value(),
+                "CONFLICTO",
+                "La operacion no pudo completarse porque los datos fueron modificados por otra solicitud. Vuelva a intentarlo.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)

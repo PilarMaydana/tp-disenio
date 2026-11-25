@@ -10,10 +10,12 @@ import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -136,9 +138,40 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.mensaje").isNotEmpty());
     }
 
+    @Test
+    @DisplayName("8. Parámetro de la URL con tipo inválido -> 400 PARAMETRO_INVALIDO (no 500)")
+    void testParametroInvalido() throws Exception {
+        mockMvc.perform(get("/test/numero/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("PARAMETRO_INVALIDO"))
+                .andExpect(jsonPath("$.mensaje").value(containsString("'id'")))
+                .andExpect(jsonPath("$.path").value("/test/numero/abc"));
+    }
+
+    @Test
+    @DisplayName("9. DataIntegrityViolationException -> 409 CONFLICTO sin exponer el detalle de la base")
+    void testConflictoIntegridad() throws Exception {
+        mockMvc.perform(get("/test/conflicto"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.mensaje").value(not(containsString("CONSTRAINT"))));
+    }
+
     @RestController
     @RequestMapping("/test")
     static class TestController {
+
+        @GetMapping("/numero/{id}")
+        public Long numero(@PathVariable Long id) {
+            return id;
+        }
+
+        @GetMapping("/conflicto")
+        public void conflicto() {
+            throw new DataIntegrityViolationException("Violación de índice único: CONSTRAINT_INDEX_4");
+        }
+
 
         @GetMapping("/no-encontrado")
         public void recursoNoEncontrado() {
