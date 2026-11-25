@@ -232,10 +232,14 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
                       : 'bg-white border-[#E0E0E0] hover:border-[#BDBEE0]'
                   }`}
                 >
-                  <Checkbox
-                    checked={isChecked}
-                    onChange={() => handleToggleAvailable(item.id)}
-                  />
+                  {/* La fila completa es clickeable: se corta la propagación del click propio del
+                      checkbox para que no se cuente dos veces (con la barra espaciadora se anulaba). */}
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isChecked}
+                      onChange={() => handleToggleAvailable(item.id)}
+                    />
+                  </span>
                   <div className="flex flex-col flex-1">
                     <span className="text-sm font-semibold text-[#000000]">{item.label}</span>
                     {item.subtitle && (
