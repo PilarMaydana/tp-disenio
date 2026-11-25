@@ -14,8 +14,11 @@ import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoExce
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -34,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @SpringBootTest
 @Transactional
+@ExtendWith(OutputCaptureExtension.class)
 class CompletarCuestionarioIntegrationTest {
 
     private static final long SUAREZ_ACTIVO = 16L;
@@ -202,6 +206,17 @@ class CompletarCuestionarioIntegrationTest {
         assertThat(suarez.getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
         assertThat(torres.getFechaCambioEstado()).isNotNull();
         assertThat(suarez.getFechaCambioEstado()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("CU 032: cada corrida del cierre registra su inicio y su fin, aunque no cierre ninguno")
+    void finalizarCuestionariosVencidosRegistraInicioYFin(CapturedOutput salida) {
+        gestor.finalizarCuestionariosVencidos();
+
+        assertThat(salida.getOut())
+                .contains("CU 032 - Inicio del cierre de cuestionarios vencidos")
+                .contains("CU 032 - Fin del cierre de cuestionarios vencidos")
+                .contains("0 cerrados (0 INCOMPLETO, 0 SIN_CONTESTAR)");
     }
 
     @Test
