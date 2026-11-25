@@ -24,7 +24,7 @@ public interface CuestionarioRepository extends JpaRepository<Cuestionario, Long
      * @param claveAcceso clave de acceso al cuestionario
      * @return cuestionario encontrado o Optional.empty(); si hubiera más de uno, el más reciente
      */
-    Optional<Cuestionario> findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+    Optional<Cuestionario> findFirstByCandidatoAndEstadoInAndClaveAccesoAndEliminadoFalseOrderByIdDesc(
             Candidato candidato,
             List<EstadoCuestionario> estados,
             String claveAcceso

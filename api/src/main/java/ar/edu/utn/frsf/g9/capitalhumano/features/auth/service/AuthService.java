@@ -100,7 +100,7 @@ public class AuthService {
 
         // 1. Consultar candidato por tipo y número de documento
         Candidato candidato = candidatoRepository
-                .findByTipoDocumentoAndNroDocumento(request.getTipoDocumento(), nroDocumento)
+                .findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(request.getTipoDocumento(), nroDocumento)
                 .orElseThrow(() -> {
                     log.warn("Candidato no encontrado para tipo {} y documento {}", request.getTipoDocumento(), nroDocumento);
                     return new AutenticacionException(ERROR_CANDIDATO);
@@ -110,7 +110,7 @@ public class AuthService {
         List<EstadoCuestionario> estadosValidos = List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO);
 
         Cuestionario cuestionario = cuestionarioRepository
-                .findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(candidato, estadosValidos, request.getClave().trim())
+                .findFirstByCandidatoAndEstadoInAndClaveAccesoAndEliminadoFalseOrderByIdDesc(candidato, estadosValidos, request.getClave().trim())
                 .orElseThrow(() -> {
                     log.warn("No se encontró cuestionario ACTIVO o EN_PROCESO con la clave provista para el candidato ID {}", candidato.getId());
                     return new AutenticacionException(ERROR_CANDIDATO);

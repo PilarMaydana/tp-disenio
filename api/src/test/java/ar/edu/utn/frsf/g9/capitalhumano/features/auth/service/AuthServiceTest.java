@@ -115,9 +115,9 @@ class AuthServiceTest {
         void autenticarCandidato_exitosoCuestionarioActivo() {
             CandidatoLoginRequestDTO request = new CandidatoLoginRequestDTO(TipoDocumento.DNI, "12345678", "CLAVE123");
 
-            when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
+            when(candidatoRepository.findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoAndEliminadoFalseOrderByIdDesc(
                     eq(candidatoMock),
                     eq(List.of(EstadoCuestionario.ACTIVO, EstadoCuestionario.EN_PROCESO)),
                     eq("CLAVE123")
@@ -138,9 +138,9 @@ class AuthServiceTest {
             cuestionarioMock.setEstado(EstadoCuestionario.EN_PROCESO);
             CandidatoLoginRequestDTO request = new CandidatoLoginRequestDTO(TipoDocumento.DNI, "12345678", "CLAVE123");
 
-            when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
+            when(candidatoRepository.findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoAndEliminadoFalseOrderByIdDesc(
                     any(Candidato.class), any(), eq("CLAVE123")
             )).thenReturn(Optional.of(cuestionarioMock));
 
@@ -156,7 +156,7 @@ class AuthServiceTest {
         void autenticarCandidato_noExiste_lanzaExcepcion() {
             CandidatoLoginRequestDTO request = new CandidatoLoginRequestDTO(TipoDocumento.DNI, "99999999", "CLAVE123");
 
-            when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "99999999"))
+            when(candidatoRepository.findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(TipoDocumento.DNI, "99999999"))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.autenticarCandidato(request))
@@ -169,9 +169,9 @@ class AuthServiceTest {
         void autenticarCandidato_claveIncorrecta_lanzaExcepcion() {
             CandidatoLoginRequestDTO request = new CandidatoLoginRequestDTO(TipoDocumento.DNI, "12345678", "WRONGKEY");
 
-            when(candidatoRepository.findByTipoDocumentoAndNroDocumento(TipoDocumento.DNI, "12345678"))
+            when(candidatoRepository.findByTipoDocumentoAndNroDocumentoAndEliminadoFalse(TipoDocumento.DNI, "12345678"))
                     .thenReturn(Optional.of(candidatoMock));
-            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoOrderByIdDesc(
+            when(cuestionarioRepository.findFirstByCandidatoAndEstadoInAndClaveAccesoAndEliminadoFalseOrderByIdDesc(
                     any(Candidato.class), any(), eq("WRONGKEY")
             )).thenReturn(Optional.empty());
 
