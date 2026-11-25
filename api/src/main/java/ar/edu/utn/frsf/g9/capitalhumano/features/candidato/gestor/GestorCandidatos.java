@@ -46,6 +46,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -150,6 +151,18 @@ public class GestorCandidatos {
         return obtenerCandidatosDisponibles(nroCandidatos).stream()
                 .map(CandidatoDTO::desde)
                 .toList();
+    }
+
+    /**
+     * Bloquea las filas de los candidatos hasta que termine la transacción, para que dos
+     * confirmaciones simultáneas no le generen dos cuestionarios activos al mismo candidato.
+     * Se bloquean en orden ascendente para evitar bloqueos cruzados (deadlocks).
+     */
+    private void bloquearCandidatos(Set<Long> nroCandidatos) {
+        nroCandidatos.stream()
+                .filter(Objects::nonNull)
+                .sorted()
+                .forEach(candidatoDAO::bloquearPorNroCandidato);
     }
 
     private List<Candidato> obtenerCandidatosDisponibles(List<Long> nroCandidatos) {
@@ -268,6 +281,7 @@ public class GestorCandidatos {
             clavePorCandidato.putIfAbsent(dto.nroCandidato(), dto.claveAcceso());
         }
 
+        bloquearCandidatos(clavePorCandidato.keySet());
         List<Candidato> candidatos = obtenerCandidatosDisponibles(new ArrayList<>(clavePorCandidato.keySet()));
         Puesto puesto = obtenerPuesto(request.puestoCodigo());
         validarPuestoEvaluable(puesto);

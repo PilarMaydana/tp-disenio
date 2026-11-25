@@ -55,6 +55,8 @@ export function useEvaluarCandidatos() {
   // El Excel se pide al backend apenas se guarda la evaluación, así el diálogo "Guardar como"
   // se abre inmediatamente cuando el actor responde "Sí" (el navegador exige que sea una acción directa).
   const archivoRef = useRef<Promise<ArchivoExcel> | null>(null);
+  /** Indica que hay una confirmación en curso (evita el doble envío de «Finalizar»). */
+  const finalizandoRef = useRef(false);
 
   // ------------------------------------------------------------ Paso 2-3: búsqueda
   const buscarCandidatos = useCallback(async (filtros: FiltrosCandidatos = {}) => {
@@ -184,7 +186,10 @@ export function useEvaluarCandidatos() {
 
   // ------------------------------------------------------------ Paso 12-13: Finalizar
   const finalizar = useCallback(async () => {
-    if (evaluacion) return;
+    // Evita el doble envío (doble click): el estado "cargando" recién se aplica en el
+    // próximo render, por eso se usa una referencia que se actualiza en el acto.
+    if (evaluacion || finalizandoRef.current) return;
+    finalizandoRef.current = true;
     setCargando(true);
     setErrorGeneral(null);
     try {
@@ -211,6 +216,7 @@ export function useEvaluarCandidatos() {
         setErrorGeneral(mensajeDeError(error));
       }
     } finally {
+      finalizandoRef.current = false;
       setCargando(false);
     }
   }, [evaluacion, puestoCodigo, candidatosConClave]);
