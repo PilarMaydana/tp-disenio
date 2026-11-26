@@ -11,6 +11,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.Archivo
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.ExportadorInformeOrdenMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.FormatoInformeOrdenMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.model.ResultadoCompetencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.service.ClasificadorMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao.PuestoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.RecursoNoEncontradoException;
@@ -50,13 +51,16 @@ public class OrdenMeritoController {
     private final CuestionarioOrdenMeritoDAO cuestionarioDAO;
     private final ResultadoCompetenciaDAO resultadoDAO;
     private final ExportadorInformeOrdenMerito exportadorInforme;
+    private final ClasificadorMerito clasificadorMerito;
 
     public OrdenMeritoController(PuestoDAO puestoDAO, CuestionarioOrdenMeritoDAO cuestionarioDAO,
-                                 ResultadoCompetenciaDAO resultadoDAO, ExportadorInformeOrdenMerito exportadorInforme) {
+                                 ResultadoCompetenciaDAO resultadoDAO, ExportadorInformeOrdenMerito exportadorInforme,
+                                 ClasificadorMerito clasificadorMerito) {
         this.puestoDAO = puestoDAO;
         this.cuestionarioDAO = cuestionarioDAO;
         this.resultadoDAO = resultadoDAO;
         this.exportadorInforme = exportadorInforme;
+        this.clasificadorMerito = clasificadorMerito;
     }
 
     @GetMapping("/puestos")
@@ -120,14 +124,7 @@ public class OrdenMeritoController {
                 .collect(Collectors.groupingBy(r -> r.getCuestionario().getId(),
                         Collectors.toMap(r -> r.getCompetencia().getId(), ResultadoCompetencia::getPuntaje)));
 
-        return cuestionarios.stream().map(c -> armarResultado(c, puesto, puntajes.getOrDefault(c.getId(), Map.of())))
-                .sorted((a, b) -> {
-                    int grupo = Integer.compare(prioridad(a.estadoMerito()), prioridad(b.estadoMerito()));
-                    if (grupo != 0) return grupo;
-                    if (a.puntajeObtenido() == null) return b.puntajeObtenido() == null ? 0 : 1;
-                    if (b.puntajeObtenido() == null) return -1;
-                    return Double.compare(b.puntajeObtenido(), a.puntajeObtenido());
-                }).toList();
+        return clasificadorMerito.clasificar(cuestionarios, puesto, puntajes);
     }
 
     @GetMapping("/puestos/{puestoId}/reporte/descargar")
@@ -156,38 +153,6 @@ public class OrdenMeritoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
                         .filename(nombreArchivo, StandardCharsets.UTF_8).build().toString())
                 .body(archivo.contenido());
-    }
-
-    private CandidatoOrdenMeritoDTO armarResultado(Cuestionario cuestionario, Puesto puesto, Map<Long, Double> puntajes) {
-        boolean completo = cuestionario.getEstado() != null && cuestionario.getEstado().name().equals("COMPLETO");
-        boolean tieneTodosLosPuntajes = !puesto.getCaracteristicas().isEmpty() && puesto.getCaracteristicas().stream()
-                .allMatch(c -> puntajes.containsKey(c.getCompetencia().getId()));
-        Double total = tieneTodosLosPuntajes ? puesto.getCaracteristicas().stream()
-                .mapToDouble(c -> puntajes.get(c.getCompetencia().getId())).sum() : null;
-        Boolean cumple = null;
-        String estadoMerito;
-        if (!completo) estadoMerito = "CUESTIONARIO_INCOMPLETO";
-        else if (!tieneTodosLosPuntajes) estadoMerito = "PENDIENTE_PUNTAJE";
-        else {
-            cumple = puesto.getCaracteristicas().stream().allMatch(c ->
-                    puntajes.get(c.getCompetencia().getId()) >= c.getPonderacionRequerida());
-            estadoMerito = cumple ? "APTO" : "NO_ALCANZA_MINIMOS";
-        }
-        return new CandidatoOrdenMeritoDTO(cuestionario.getId(),
-                cuestionario.getCandidato().getTipoDocumento().name(), cuestionario.getCandidato().getNroDocumento(),
-                cuestionario.getCandidato().getApellido(), cuestionario.getCandidato().getNombre(),
-                cuestionario.getEstado() == null ? "SIN_ESTADO" : cuestionario.getEstado().name(), total,
-                estadoMerito, cumple, cuestionario.getFechaInicio(), cuestionario.getFechaFinalizacion(),
-                cuestionario.getCandidato().getEscolaridad());
-    }
-
-    private int prioridad(String estado) {
-        return switch (estado) {
-            case "APTO" -> 0;
-            case "NO_ALCANZA_MINIMOS" -> 1;
-            case "PENDIENTE_PUNTAJE" -> 2;
-            default -> 3;
-        };
     }
 
     private Puesto validarPuesto(Long puestoId) {

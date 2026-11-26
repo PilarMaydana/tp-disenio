@@ -8,7 +8,9 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuesti
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dao.CuestionarioOrdenMeritoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dao.ResultadoCompetenciaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dto.CandidatoOrdenMeritoDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.ExportadorInformeOrdenMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.model.ResultadoCompetencia;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.service.ClasificadorMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao.PuestoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.CaracteristicaPuesto;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
@@ -37,7 +39,8 @@ class OrdenMeritoControllerTest {
         PuestoDAO puestoDAO = mock(PuestoDAO.class);
         cuestionarioDAO = mock(CuestionarioOrdenMeritoDAO.class);
         resultadoDAO = mock(ResultadoCompetenciaDAO.class);
-        controller = new OrdenMeritoController(puestoDAO, cuestionarioDAO, resultadoDAO);
+        controller = new OrdenMeritoController(puestoDAO, cuestionarioDAO, resultadoDAO,
+                mock(ExportadorInformeOrdenMerito.class), new ClasificadorMerito());
         Puesto puesto = new Puesto(10L, "DEV", "Desarrollador", "Descripción", "Empresa");
         competencia = new Competencia(7L, "TEC", "Técnica", "Competencia técnica");
         puesto.addCaracteristica(new CaracteristicaPuesto(1L, puesto, competencia, 6.0));
