@@ -8,11 +8,17 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 /**
  * DAO para el acceso a datos y consultas de la entidad {@link Pregunta} (CU 020 / CU 021).
  */
 public interface PreguntaDAO extends JpaRepository<Pregunta, Long> {
+
+    @Query("SELECT DISTINCT p FROM Pregunta p " +
+           "JOIN FETCH p.factor f JOIN FETCH f.competencia c LEFT JOIN FETCH p.opciones o " +
+           "WHERE p.eliminado = false AND c.id IN :competenciaIds ORDER BY p.id ASC")
+    List<Pregunta> findActivasByCompetenciaIds(@Param("competenciaIds") Collection<Long> competenciaIds);
 
     /**
      * Busca preguntas activas aplicando los criterios opcionales con semántica "contiene".
