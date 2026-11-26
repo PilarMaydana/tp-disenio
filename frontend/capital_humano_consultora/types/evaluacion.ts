@@ -13,4 +13,5 @@ export interface Evaluacion {
   tiempoRestante?: string;
   totalPreguntas?: number;
   preguntasRespondidas?: number;
+  puntajes?: Array<{ competenciaId: number; competencia: string; puntaje: number }>;
 }

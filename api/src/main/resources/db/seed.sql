@@ -10,7 +10,8 @@ INSERT INTO competencia (codigo, nombre, descripcion) VALUES
 INSERT INTO factor (codigo, nombre, descripcion, nro_orden, competencia_id, eliminado) VALUES
     ('FAC-01', 'COMUNICACIÓN ORAL', 'CAPACIDAD PARA TRANSMITIR INFORMACIÓN DE MANERA VERBAL CLARA.', 1, 1, FALSE),
     ('FAC-02', 'COMUNICACIÓN ESCRITA', 'CAPACIDAD PARA REDACTAR DOCUMENTOS DE MANERA ESTRUCTURADA.', 2, 1, FALSE),
-    ('FAC-03', 'DESARROLLO DE SOFTWARE', 'CAPACIDAD PARA DISEÑAR Y PROGRAMAR SOLUCIONES DE SOFTWARE.', 1, 5, FALSE);
+    ('FAC-03', 'DESARROLLO DE SOFTWARE', 'CAPACIDAD PARA DISEÑAR Y PROGRAMAR SOLUCIONES DE SOFTWARE.', 1, 5, FALSE),
+    ('FAC-04', 'COLABORACIÓN', 'CAPACIDAD PARA COLABORAR CON EL EQUIPO DE TRABAJO.', 1, 3, FALSE);
 
 INSERT INTO puesto (codigo, nombre, descripcion, empresa, eliminado) VALUES
     ('DEV-01', 'DESARROLLADOR SENIOR', 'DESARROLLO Y ARQUITECTURA DE SOFTWARE.', 'TECH SOLUTIONS', FALSE),
@@ -26,11 +27,29 @@ INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALU
     ('PREGUNTA POO', '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?', 'CONCEPTOS BÁSICOS', 3, FALSE),
     ('PATRONES DE DISEÑO', '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?', 'PREGUNTA DE ARQUITECTURA', 3, FALSE);
 
+INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALUES
+    ('COMUNICACIÓN ORAL', '¿CÓMO PRESENTARÍAS UNA IDEA TÉCNICA A TU EQUIPO?', 'PREGUNTA DE MUESTRA CU028', 1, FALSE),
+    ('COMUNICACIÓN ESCRITA', '¿CÓMO DOCUMENTARÍAS UNA DECISIÓN DEL EQUIPO?', 'PREGUNTA DE MUESTRA CU028', 2, FALSE),
+    ('COLABORACIÓN 1', '¿CÓMO ACTUÁS CUANDO UN COMPAÑERO NECESITA AYUDA?', 'PREGUNTA DE MUESTRA CU028', 4, FALSE),
+    ('COLABORACIÓN 2', '¿CÓMO RESOLVÉS UN DESACUERDO EN EL EQUIPO?', 'PREGUNTA DE MUESTRA CU028', 4, FALSE);
+
 INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
-    (1, 'OPCION A', 'UN PARADIGMA BASADO EN OBJETOS', 1, 1.0),
-    (1, 'OPCION B', 'UN LENGUAJE DE PROGRAMACIÓN', 2, 0.0),
-    (2, 'INSTANCIA ÚNICA', 'GARANTIZA UNA ÚNICA INSTANCIA', 1, 1.0),
-    (2, 'MÚLTIPLES INSTANCIAS', 'CREA MUCHAS INSTANCIAS', 2, 0.0);
+    (1, 'OPCION A', 'UN PARADIGMA BASADO EN OBJETOS', 1, 7.0),
+    (1, 'OPCION B', 'UN LENGUAJE DE PROGRAMACIÓN', 2, 3.0),
+    (2, 'INSTANCIA ÚNICA', 'GARANTIZA UNA ÚNICA INSTANCIA', 1, 7.0),
+    (2, 'MÚLTIPLES INSTANCIAS', 'CREA MUCHAS INSTANCIAS', 2, 3.0),
+    (3, 'CLARA', 'EXPLICO LA IDEA CON CLARIDAD Y ESCUCHO PREGUNTAS', 1, 5.0),
+    (3, 'PARCIAL', 'PRESENTO LA IDEA SIN ADAPTARLA AL EQUIPO', 2, 4.0),
+    (3, 'INSUFICIENTE', 'EVITO COMPARTIR LA IDEA', 3, 1.0),
+    (4, 'CLARA', 'REGISTRO CONTEXTO, DECISIÓN Y MOTIVOS', 1, 5.0),
+    (4, 'PARCIAL', 'ANOTO SOLO LA DECISIÓN', 2, 4.0),
+    (4, 'INSUFICIENTE', 'NO DOCUMENTO EL CAMBIO', 3, 1.0),
+    (5, 'COLABORATIVA', 'OFREZCO AYUDA Y COORDINO CON LA PERSONA', 1, 5.0),
+    (5, 'PARCIAL', 'AYUDO SOLO SI ME LO PIDEN', 2, 4.0),
+    (5, 'INSUFICIENTE', 'CONTINÚO CON MI TAREA SIN RESPONDER', 3, 1.0),
+    (6, 'CONSTRUCTIVA', 'ESCUCHO LAS POSTURAS Y BUSCO ACUERDOS', 1, 5.0),
+    (6, 'PARCIAL', 'ACEPTO LA DECISIÓN SIN CONVERSARLA', 2, 4.0),
+    (6, 'INSUFICIENTE', 'IMPONGO MI POSTURA', 3, 1.0);
 
 INSERT INTO opcion_respuesta (nombre, descripcion) VALUES
     ('FRECUENCIA', 'ESCALA DE FRECUENCIA DE COMPORTAMIENTO OBSERVADO'),
@@ -56,8 +75,28 @@ INSERT INTO item_opcion_respuesta (opcion_respuesta_id, orden, descripcion) VALU
 INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
     (1, 'DNI', '12345678', 'PÉREZ', 'JUAN', 'juan.perez@example.com', FALSE),
     (2, 'DNI', '87654321', 'GÓMEZ', 'MARÍA', 'maria.gomez@example.com', FALSE),
-    (3, 'DNI', '11223344', 'LÓPEZ', 'CARLOS', 'carlos.lopez@example.com', FALSE);
+    (3, 'DNI', '11223344', 'LÓPEZ', 'CARLOS', 'carlos.lopez@example.com', FALSE),
+    (4, 'DNI', '20334455', 'FERNÁNDEZ', 'LUCÍA', 'lucia.fernandez@example.com', FALSE),
+    (5, 'DNI', '30445566', 'RAMÍREZ', 'JULIO', 'julio.ramirez@example.com', FALSE);
 
+INSERT INTO cuestionario (candidato_id, puesto_id, estado, clave_acceso, fecha_creacion, fecha_inicio, fecha_finalizacion, eliminado) VALUES
+    (1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, NULL, NULL, FALSE),
+    (2, 1, 'EN_PROCESO', 'TEST4567', TIMESTAMP '2026-11-10 08:55:00', TIMESTAMP '2026-11-10 09:00:00', NULL, FALSE),
+    (3, 1, 'COMPLETO', 'COMP1234', TIMESTAMP '2026-11-10 09:55:00', TIMESTAMP '2026-11-10 10:00:00', TIMESTAMP '2026-11-10 10:45:00', FALSE),
+    (4, 1, 'COMPLETO', 'LUCIA123', TIMESTAMP '2026-11-11 08:55:00', TIMESTAMP '2026-11-11 09:00:00', TIMESTAMP '2026-11-11 09:50:00', FALSE),
+    (5, 1, 'COMPLETO', 'JULIO123', TIMESTAMP '2026-11-12 08:55:00', TIMESTAMP '2026-11-12 09:00:00', TIMESTAMP '2026-11-12 10:10:00', FALSE);
+
+-- Resultados de muestra: competencias 1 y 3 tienen mínimos 8 y 9 para DEV-01.
+INSERT INTO puntaje_competencia_cuestionario (cuestionario_id, competencia_id, puntaje) VALUES
+    (3, 1, 9.0), (3, 3, 10.0),
+    (4, 1, 8.0), (4, 3, 9.0),
+    (5, 1, 10.0), (5, 3, 8.0);
+
+-- Respuestas de muestra consistentes con los puntajes anteriores.
+INSERT INTO respuesta_cuestionario (cuestionario_id, pregunta_id, opcion_respuesta_id) VALUES
+    (3, 3, 5), (3, 4, 9), (3, 5, 11), (3, 6, 14),
+    (4, 3, 6), (4, 4, 9), (4, 5, 11), (4, 6, 15),
+    (5, 3, 5), (5, 4, 8), (5, 5, 12), (5, 6, 15);
 -- CU 025: evaluación que agrupa los cuestionarios de ejemplo
 INSERT INTO evaluacion (puesto_id, fecha_creacion) VALUES
     (1, CURRENT_TIMESTAMP);
@@ -96,11 +135,11 @@ INSERT INTO caracteristica_puesto (puesto_id, competencia_id, ponderacion_requer
 
 -- Candidatos sin cuestionarios (disponibles para evaluar)
 INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
-    (4, 'DNI', '40111222', 'ROMERO', 'AGUSTÍN', 'agustin.romero@example.com', FALSE),
-    (5, 'DNI', '41222333', 'DÍAZ', 'CAMILA', 'camila.diaz@example.com', FALSE),
-    (6, 'DNI', '38333444', 'BENÍTEZ', 'MARTÍN', 'martin.benitez@example.com', FALSE),
-    (7, 'PP', 'AAB123456', 'FERREYRA', 'SOFÍA', 'sofia.ferreyra@example.com', FALSE),
-    (8, 'DNI', '42444555', 'ROMERO', 'LUCAS', 'lucas.romero@example.com', FALSE);
+    (19, 'DNI', '40111222', 'ROMERO', 'AGUSTÍN', 'agustin.romero@example.com', FALSE),
+    (20, 'DNI', '41222333', 'DÍAZ', 'CAMILA', 'camila.diaz@example.com', FALSE),
+    (21, 'DNI', '38333444', 'BENÍTEZ', 'MARTÍN', 'martin.benitez@example.com', FALSE),
+    (22, 'PP', 'AAB123456', 'FERREYRA', 'SOFÍA', 'sofia.ferreyra@example.com', FALSE),
+    (23, 'DNI', '42444555', 'ROMERO', 'LUCAS', 'lucas.romero@example.com', FALSE);
 
 -- ---------------------------------------------------------------------------
 -- CU 026 - Completar cuestionario / datos para CU 027 y CU 028

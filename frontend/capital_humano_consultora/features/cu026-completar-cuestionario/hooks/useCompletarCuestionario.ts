@@ -44,6 +44,7 @@ export function useCompletarCuestionario() {
    */
   const enCursoRef = useRef(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const limpiarMensaje = useCallback(() => setMensaje(null), []);
 
   const [instrucciones, setInstrucciones] = useState<Instrucciones | null>(null);
   const [resumen, setResumen] = useState<ResumenCuestionario | null>(null);
@@ -180,6 +181,7 @@ export function useCompletarCuestionario() {
     fase,
     enviando,
     mensaje,
+    limpiarMensaje,
     instrucciones,
     resumen,
     paso,

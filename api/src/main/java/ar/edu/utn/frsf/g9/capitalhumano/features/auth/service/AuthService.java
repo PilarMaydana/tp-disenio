@@ -61,6 +61,13 @@ public class AuthService {
         // Requerimiento especial: conversión siempre a mayúsculas
         String usuarioNormalizado = request.getUsuario().trim().toUpperCase();
 
+        // La auditoría actual asigna todas las operaciones a la consultora Lucía Fernández.
+        // No permitir que otro usuario LDAP herede esa identidad hasta que exista un mapeo de usuarios.
+        if (!"LFERNANDEZ".equals(usuarioNormalizado)) {
+            log.warn("Intento de acceso de consultor no habilitado: {}", usuarioNormalizado);
+            throw new AutenticacionException(ERROR_CONSULTOR);
+        }
+
         boolean autenticado = ldapAuthStrategy.authenticate(usuarioNormalizado, request.getContrasena());
         if (!autenticado) {
             log.warn("Fallo de autenticación para consultor: {}", usuarioNormalizado);

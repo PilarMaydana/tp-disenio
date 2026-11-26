@@ -48,11 +48,7 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
     codigoInputRef,
   } = useAltaPuesto({ onSuccessRedirect, onCancelRedirect });
 
-  const { ref: formCodigoRef, ...codigoRegister } = register('codigo', {
-    onChange: (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    },
-  });
+  const { ref: formCodigoRef, ...codigoRegister } = register('codigo');
 
   const availableTransferItems: TransferItem[] = competenciasDisponibles.map((c) => ({
     id: String(c.id),
@@ -95,8 +91,7 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
               <Input
                 placeholder="EJ: DEV-01"
                 maxLength={50}
-                style={{ textTransform: 'uppercase' }}
-                className="uppercase font-mono font-medium"
+                className="font-mono font-medium"
                 ref={(e) => {
                   formCodigoRef(e);
                   codigoInputRef.current = e;
@@ -117,13 +112,8 @@ export const AltaPuestoScreen: React.FC<AltaPuestoScreenProps> = ({
               <Input
                 placeholder="EJ: DESARROLLADOR FULL STACK SENIOR"
                 maxLength={100}
-                style={{ textTransform: 'uppercase' }}
-                className="uppercase font-medium"
-                {...register('nombre', {
-                  onChange: (e) => {
-                    e.target.value = e.target.value.toUpperCase();
-                  },
-                })}
+                className="font-medium"
+                {...register('nombre')}
                 error={!!errors.nombre}
               />
             </NotchedField>

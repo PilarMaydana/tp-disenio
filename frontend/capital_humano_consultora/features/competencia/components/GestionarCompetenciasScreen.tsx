@@ -7,10 +7,13 @@ import { DataTable, Column } from '@/components/organisms/DataTable';
 import { ROUTES } from '@/constants/routes';
 import { CompetenciaResponse } from '@/types/competencia';
 import { useCompetencias } from '../hooks/useCompetencias';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
+import { Icon } from '@/components/ui/Icon';
 
 export const GestionarCompetenciasScreen: React.FC = () => {
   const router = useRouter();
-  const { competencias, isLoading, error, recargarCompetencias } = useCompetencias();
+  const { competencias, isLoading, error, dismissError, recargarCompetencias } = useCompetencias();
+  const mostrarError = useAutoDismissError(error, dismissError);
 
   const handleNuevaCompetencia = () => {
     router.push(ROUTES.CONSULTOR.COMPETENCIAS_NUEVA);
@@ -88,11 +91,12 @@ export const GestionarCompetenciasScreen: React.FC = () => {
       </div>
 
       {/* Estado de error real del backend */}
-      {error && (
+      {mostrarError && error && (
         <div
           role="alert"
           className="w-full p-5 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
+          <Icon name="error" size={18} className="shrink-0" aria-hidden="true" />
           <span>{error}</span>
           <Button
             type="button"
@@ -102,6 +106,7 @@ export const GestionarCompetenciasScreen: React.FC = () => {
           >
             Reintentar
           </Button>
+          <button type="button" onClick={dismissError} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
         </div>
       )}
 

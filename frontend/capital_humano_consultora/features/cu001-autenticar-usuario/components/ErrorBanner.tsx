@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Icon } from '@/components/ui/Icon';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 export interface ErrorBannerProps {
   message: string | null;
@@ -14,7 +15,8 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
   onClose,
   className = '',
 }) => {
-  if (!message) return null;
+  const visible = useAutoDismissError(message, onClose);
+  if (!visible) return null;
 
   return (
     <div
@@ -22,6 +24,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
       aria-live="assertive"
       className={`w-full p-3 bg-red-50 border border-red-200 text-[#D32F2F] text-sm rounded-xl font-medium flex items-center justify-between gap-3 shadow-xs transition-all duration-200 ${className}`}
     >
+      <Icon name="error" size={18} className="shrink-0" aria-hidden="true" />
       <span className="flex-1 text-center leading-snug">{message}</span>
 
       {onClose && (

@@ -11,6 +11,7 @@ import {
   useAltaOpcionRespuesta,
   UseAltaOpcionRespuestaOptions,
 } from '../hooks/useAltaOpcionRespuesta';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 export type AltaOpcionRespuestaFormProps = UseAltaOpcionRespuestaOptions;
 
@@ -25,6 +26,8 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
     errorMessages,
     isSubmitting,
     serverError,
+    dismissServerError,
+    clearErrors,
     createdOpcionNombre,
     handleAddItem,
     handleRemoveItem,
@@ -33,6 +36,11 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
     handleFinish,
     handleCancel,
   } = useAltaOpcionRespuesta({ onSuccessNavigate, onCancelNavigate });
+  const mostrarErrorServidor = useAutoDismissError(serverError, dismissServerError);
+  const mostrarErroresValidacion = useAutoDismissError(
+    errorMessages.length ? errorMessages.join('\n') : null,
+    () => clearErrors(),
+  );
 
   const nombreRegister = register('nombre');
   const descripcionRegister = register('descripcion');
@@ -79,21 +87,25 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
         </div>
 
         {/* Flujos Alternativos 2.B (409 Nombre existente) y 2.C/2.D (422 Regla de negocio) */}
-        {serverError && (
+        {mostrarErrorServidor && serverError && (
           <div
             role="alert"
-            className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F]"
+            className="flex w-full items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-[#D32F2F]"
           >
-            {serverError}
+            <Icon name="error" size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span className="flex-1">{serverError}</span>
+            <button type="button" onClick={dismissServerError} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
           </div>
         )}
 
         {/* Flujo Alternativo 2.A: Cuadro superior que lista TODAS las omisiones/errores juntos */}
-        {errorMessages.length > 0 && (
+        {mostrarErroresValidacion && errorMessages.length > 0 && (
           <div
             role="alert"
-            className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F] flex flex-col gap-1"
+            className="flex w-full items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-[#D32F2F]"
           >
+            <Icon name="error" size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="flex-1 space-y-1">
             <span className="font-semibold">
               Por favor, complete o corrija los siguientes datos requeridos:
             </span>
@@ -102,6 +114,8 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
                 <li key={idx}>{msg}</li>
               ))}
             </ul>
+            </div>
+            <button type="button" onClick={() => clearErrors()} aria-label="Cerrar mensajes de validación" title="Cerrar mensajes de validación" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
           </div>
         )}
 

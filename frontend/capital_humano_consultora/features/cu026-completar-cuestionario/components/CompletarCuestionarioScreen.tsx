@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/context/AuthContext';
@@ -86,6 +87,7 @@ const Pregunta: React.FC<{
  */
 export const CompletarCuestionarioScreen: React.FC = () => {
   const cu = useCompletarCuestionario();
+  const mostrarMensaje = useAutoDismissError(cu.mensaje, cu.limpiarMensaje);
   const { logout } = useAuth();
 
   const encabezado = (cu.paso || cu.resumen) && (
@@ -208,10 +210,11 @@ export const CompletarCuestionarioScreen: React.FC = () => {
             />
           </div>
 
-          {cu.mensaje && (
+          {mostrarMensaje && cu.mensaje && (
             <div role="alert" className="p-4 bg-red-50 border-2 border-red-300 rounded-xl flex items-start gap-3">
               <Icon name="error" size={22} className="text-[#D32F2F] shrink-0" />
-              <p className="text-sm font-medium text-red-800">{cu.mensaje}</p>
+              <p className="flex-1 text-sm font-medium text-red-800">{cu.mensaje}</p>
+              <button type="button" onClick={cu.limpiarMensaje} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 text-red-500 hover:bg-red-100 hover:text-red-700"><Icon name="close" size={18} aria-hidden="true" /></button>
             </div>
           )}
 

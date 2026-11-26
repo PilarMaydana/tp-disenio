@@ -4,10 +4,27 @@ import { apiFetch } from './apiClient';
 export const evaluacionService = {
   async getCuestionarioActivo(cuestionarioId?: number): Promise<Evaluacion> {
     try {
-      const endpoint = cuestionarioId
-        ? `/evaluaciones/cuestionario/${cuestionarioId}`
-        : '/evaluaciones/mis-cuestionarios';
-      return await apiFetch<Evaluacion>(endpoint);
+      if (!cuestionarioId) throw new Error('No hay un cuestionario asociado a la sesión');
+      const resumen = await apiFetch<{
+        nroCuestionario: number; titulo: string; puestoNombre: string; empresaNombre: string;
+        estado: Evaluacion['estado']; fechaInicio: string | null; fechaFin: string | null;
+        ultimaActualizacion: string | null; totalPreguntas: number; preguntasRespondidas: number;
+        puntajes: NonNullable<Evaluacion['puntajes']>;
+      }>(`/cuestionarios/${cuestionarioId}/resumen`);
+      return {
+        id: `cuestionario-${resumen.nroCuestionario}`,
+        nroCuestionario: resumen.nroCuestionario,
+        titulo: resumen.titulo,
+        puestoNombre: resumen.puestoNombre,
+        empresaNombre: resumen.empresaNombre,
+        estado: resumen.estado,
+        fechaInicio: resumen.fechaInicio || 'Sin iniciar',
+        fechaFin: resumen.fechaFin || undefined,
+        ultimaActualizacion: resumen.ultimaActualizacion || '',
+        totalPreguntas: resumen.totalPreguntas,
+        preguntasRespondidas: resumen.preguntasRespondidas,
+        puntajes: resumen.puntajes,
+      };
     } catch {
       // Fallback para desarrollo offline / testing
 

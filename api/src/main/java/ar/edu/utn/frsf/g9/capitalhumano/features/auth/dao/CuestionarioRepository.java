@@ -15,6 +15,8 @@ import java.util.Optional;
 @Repository
 public interface CuestionarioRepository extends JpaRepository<Cuestionario, Long> {
 
+    Optional<Cuestionario> findByIdAndEliminadoFalse(Long id);
+
     /**
      * Busca un cuestionario perteneciente al candidato indicado, con estado dentro de la lista
      * de estados válidos y cuya clave de acceso coincida con la provista.
