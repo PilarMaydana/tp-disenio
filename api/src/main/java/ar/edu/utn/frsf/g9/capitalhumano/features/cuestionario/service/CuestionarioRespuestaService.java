@@ -4,9 +4,9 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.auth.dao.CuestionarioRepository
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.RespuestaCuestionarioDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.GuardarCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.GuardarRespuestasDTO;
-import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioResumenDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioRespuestaResumenDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.OpcionCuestionarioDTO;
-import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaCuestionarioDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaRespuestaCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PuntajeCompetenciaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.Cuestionario;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.EstadoCuestionario;
@@ -57,7 +57,7 @@ public class CuestionarioRespuestaService {
     }
 
     @Transactional(readOnly = true)
-    public CuestionarioResumenDTO obtenerResumen(Long cuestionarioId) {
+    public CuestionarioRespuestaResumenDTO obtenerResumen(Long cuestionarioId) {
         Cuestionario cuestionario = obtenerCuestionario(cuestionarioId);
         if (cuestionario.getPuestoId() == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El cuestionario no tiene un puesto asociado");
@@ -77,13 +77,13 @@ public class CuestionarioRespuestaService {
                 : cuestionario.getFechaInicio() != null ? cuestionario.getFechaInicio() : cuestionario.getFechaCreacion();
         List<PuntajeCompetenciaDTO> puntajes = resultadoDAO.findByCuestionarioIdIn(List.of(cuestionarioId)).stream()
                 .map(r -> new PuntajeCompetenciaDTO(r.getCompetencia().getId(), r.getCompetencia().getNombre(), r.getPuntaje())).toList();
-        return new CuestionarioResumenDTO(cuestionario.getId(), "Cuestionario de competencias", puesto.getNombre(),
+        return new CuestionarioRespuestaResumenDTO(cuestionario.getId(), "Cuestionario de competencias", puesto.getNombre(),
                 puesto.getEmpresa(), estado, formatear(cuestionario.getFechaInicio()),
                 formatear(cuestionario.getFechaFinalizacion()), formatear(actualizacion), total, respondidas, puntajes);
     }
 
     @Transactional(readOnly = true)
-    public List<PreguntaCuestionarioDTO> obtenerPreguntas(Long cuestionarioId) {
+    public List<PreguntaRespuestaCuestionarioDTO> obtenerPreguntas(Long cuestionarioId) {
         Cuestionario cuestionario = obtenerCuestionario(cuestionarioId);
         validarAsignado(cuestionario);
         var puesto = puestoDAO.findById(cuestionario.getPuestoId())
@@ -93,7 +93,7 @@ public class CuestionarioRespuestaService {
         List<Pregunta> preguntas = preguntaDAO.findActivasByCompetenciaIds(competencias);
         Map<Long, Long> seleccionadas = respuestaDAO.findByCuestionarioId(cuestionarioId).stream()
                 .collect(Collectors.toMap(r -> r.getPregunta().getId(), r -> r.getOpcion().getId()));
-        return preguntas.stream().map(p -> new PreguntaCuestionarioDTO(p.getId(), p.getEnunciado(),
+        return preguntas.stream().map(p -> new PreguntaRespuestaCuestionarioDTO(p.getId(), p.getEnunciado(),
                 p.getFactor().getCompetencia().getNombre(), p.getOpciones().stream()
                 .map(o -> new OpcionCuestionarioDTO(o.getId(),
                         o.getDescripcion() == null || o.getDescripcion().isBlank() ? o.getNombre() : o.getDescripcion()))

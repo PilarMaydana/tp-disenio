@@ -87,7 +87,7 @@ INSERT INTO cuestionario (candidato_id, puesto_id, estado, clave_acceso, fecha_c
     (5, 1, 'COMPLETO', 'JULIO123', TIMESTAMP '2026-11-12 08:55:00', TIMESTAMP '2026-11-12 09:00:00', TIMESTAMP '2026-11-12 10:10:00', FALSE);
 
 -- Resultados de muestra: competencias 1 y 3 tienen mínimos 8 y 9 para DEV-01.
-INSERT INTO resultado_competencia (cuestionario_id, competencia_id, puntaje) VALUES
+INSERT INTO puntaje_competencia_cuestionario (cuestionario_id, competencia_id, puntaje) VALUES
     (3, 1, 9.0), (3, 3, 10.0),
     (4, 1, 8.0), (4, 3, 9.0),
     (5, 1, 10.0), (5, 3, 8.0);
@@ -135,11 +135,11 @@ INSERT INTO caracteristica_puesto (puesto_id, competencia_id, ponderacion_requer
 
 -- Candidatos sin cuestionarios (disponibles para evaluar)
 INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
-    (4, 'DNI', '40111222', 'ROMERO', 'AGUSTÍN', 'agustin.romero@example.com', FALSE),
-    (5, 'DNI', '41222333', 'DÍAZ', 'CAMILA', 'camila.diaz@example.com', FALSE),
-    (6, 'DNI', '38333444', 'BENÍTEZ', 'MARTÍN', 'martin.benitez@example.com', FALSE),
-    (7, 'PP', 'AAB123456', 'FERREYRA', 'SOFÍA', 'sofia.ferreyra@example.com', FALSE),
-    (8, 'DNI', '42444555', 'ROMERO', 'LUCAS', 'lucas.romero@example.com', FALSE);
+    (19, 'DNI', '40111222', 'ROMERO', 'AGUSTÍN', 'agustin.romero@example.com', FALSE),
+    (20, 'DNI', '41222333', 'DÍAZ', 'CAMILA', 'camila.diaz@example.com', FALSE),
+    (21, 'DNI', '38333444', 'BENÍTEZ', 'MARTÍN', 'martin.benitez@example.com', FALSE),
+    (22, 'PP', 'AAB123456', 'FERREYRA', 'SOFÍA', 'sofia.ferreyra@example.com', FALSE),
+    (23, 'DNI', '42444555', 'ROMERO', 'LUCAS', 'lucas.romero@example.com', FALSE);
 
 -- ---------------------------------------------------------------------------
 -- CU 026 - Completar cuestionario / datos para CU 027 y CU 028

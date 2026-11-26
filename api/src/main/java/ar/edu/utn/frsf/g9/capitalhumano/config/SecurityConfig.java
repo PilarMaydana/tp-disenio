@@ -35,25 +35,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").hasRole("CONSULTOR")
                         .anyRequest().denyAll())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class);
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // TODO CU 01: exigir autenticación
-                        .requestMatchers("/api/competencias/**").permitAll()
-                        .requestMatchers("/api/puestos/**").permitAll()
-                        // TODO CU 01: exigir autenticación
-                        .requestMatchers("/api/factores/**").permitAll()
-                        // TODO CU 01: exigir autenticación
-                        .requestMatchers("/api/preguntas/**").permitAll()
-                        // TODO CU 01: exigir autenticación
-                        .requestMatchers("/api/opciones-respuesta/**").permitAll()
-                        // TODO CU 01: exigir autenticación de consultor (CU 025)
-                        .requestMatchers("/api/candidatos/**").permitAll()
-                        .requestMatchers("/api/evaluaciones/**").permitAll()
-                        // CU 026: el candidato se valida con su token dentro del controlador
-                        .requestMatchers("/api/cuestionarios/**").permitAll()
-                        .anyRequest().permitAll()
-                );
 
         return http.build();
     }

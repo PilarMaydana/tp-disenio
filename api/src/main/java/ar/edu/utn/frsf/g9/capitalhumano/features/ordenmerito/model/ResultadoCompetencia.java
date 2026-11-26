@@ -14,8 +14,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /** Puntaje obtenido por un candidato en una competencia de su cuestionario. */
-@Entity
-@Table(name = "resultado_competencia", uniqueConstraints = @UniqueConstraint(
+@Entity(name = "PuntajeCompetenciaCuestionario")
+@Table(name = "puntaje_competencia_cuestionario", uniqueConstraints = @UniqueConstraint(
         name = "uk_resultado_cuestionario_competencia", columnNames = {"cuestionario_id", "competencia_id"}))
 public class ResultadoCompetencia {
 

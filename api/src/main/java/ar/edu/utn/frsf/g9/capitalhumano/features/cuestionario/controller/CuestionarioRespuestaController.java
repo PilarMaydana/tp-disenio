@@ -1,9 +1,9 @@
 package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.controller;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.GuardarCuestionarioDTO;
-import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioResumenDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioRespuestaResumenDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.GuardarRespuestasDTO;
-import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaCuestionarioDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaRespuestaCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.service.CuestionarioRespuestaService;
 import ar.edu.utn.frsf.g9.capitalhumano.features.auth.service.JwtTokenService;
 import jakarta.validation.Valid;
@@ -33,14 +33,14 @@ public class CuestionarioRespuestaController {
     }
 
     @GetMapping("/{id}/resumen")
-    public CuestionarioResumenDTO obtenerResumen(@PathVariable Long id,
+    public CuestionarioRespuestaResumenDTO obtenerResumen(@PathVariable Long id,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
         validarToken(authorization, id);
         return service.obtenerResumen(id);
     }
 
     @GetMapping("/{id}/preguntas")
-    public List<PreguntaCuestionarioDTO> obtenerPreguntas(@PathVariable Long id,
+    public List<PreguntaRespuestaCuestionarioDTO> obtenerPreguntas(@PathVariable Long id,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
         validarToken(authorization, id);
         return service.obtenerPreguntas(id);

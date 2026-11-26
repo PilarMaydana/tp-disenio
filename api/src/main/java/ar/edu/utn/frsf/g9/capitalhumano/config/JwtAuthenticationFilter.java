@@ -28,7 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            var claims = jwtTokenService.validarToken(authorization.substring(7).trim());
+            var claims = jwtTokenService.validarTokenClaims(authorization.substring(7).trim());
             if (claims != null) {
                 var authentication = new UsernamePasswordAuthenticationToken(
                         claims,
