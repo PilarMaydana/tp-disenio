@@ -5,7 +5,11 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dao.CuestionarioOrd
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dao.ResultadoCompetenciaDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dto.CandidatoOrdenMeritoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dto.EvaluacionOrdenMeritoDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dto.InformeOrdenMeritoDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.dto.PuestoOrdenMeritoDTO;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.ArchivoInformeOrdenMerito;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.ExportadorInformeOrdenMerito;
+import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.exportacion.FormatoInformeOrdenMerito;
 import ar.edu.utn.frsf.g9.capitalhumano.features.ordenmerito.model.ResultadoCompetencia;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.dao.PuestoDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.model.Puesto;
@@ -14,6 +18,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -39,12 +48,14 @@ public class OrdenMeritoController {
     private final PuestoDAO puestoDAO;
     private final CuestionarioOrdenMeritoDAO cuestionarioDAO;
     private final ResultadoCompetenciaDAO resultadoDAO;
+    private final ExportadorInformeOrdenMerito exportadorInforme;
 
     public OrdenMeritoController(PuestoDAO puestoDAO, CuestionarioOrdenMeritoDAO cuestionarioDAO,
-                                 ResultadoCompetenciaDAO resultadoDAO) {
+                                 ResultadoCompetenciaDAO resultadoDAO, ExportadorInformeOrdenMerito exportadorInforme) {
         this.puestoDAO = puestoDAO;
         this.cuestionarioDAO = cuestionarioDAO;
         this.resultadoDAO = resultadoDAO;
+        this.exportadorInforme = exportadorInforme;
     }
 
     @GetMapping("/puestos")
@@ -81,9 +92,12 @@ public class OrdenMeritoController {
     public List<EvaluacionOrdenMeritoDTO> listarEvaluaciones(@PathVariable Long puestoId) {
         validarPuesto(puestoId);
         return cuestionarioDAO.findByPuestoIdAndEliminadoFalseOrderByIdAsc(puestoId).stream()
-                .map(c -> new EvaluacionOrdenMeritoDTO(c.getId(), fecha(c.getFechaInicio() != null ? c.getFechaInicio() : c.getFechaCreacion()),
-                        "Cuestionario de " + c.getCandidato().getApellido() + ", " + c.getCandidato().getNombre(),
-                        c.getEstado() != null && c.getEstado().name().equals("COMPLETO") ? "Completada" : "Parcial"))
+                .map(c -> {
+                    LocalDateTime fechaEvaluacion = c.getFechaInicio() != null ? c.getFechaInicio() : c.getFechaCreacion();
+                    return new EvaluacionOrdenMeritoDTO(c.getId(), fecha(fechaEvaluacion), fechaISO(fechaEvaluacion),
+                            "Cuestionario de " + c.getCandidato().getApellido() + ", " + c.getCandidato().getNombre(),
+                            c.getEstado() != null && c.getEstado().name().equals("COMPLETO") ? "Completada" : "Parcial");
+                })
                 .toList();
     }
 
@@ -113,6 +127,34 @@ public class OrdenMeritoController {
                     if (b.puntajeObtenido() == null) return -1;
                     return Double.compare(b.puntajeObtenido(), a.puntajeObtenido());
                 }).toList();
+    }
+
+    @GetMapping("/puestos/{puestoId}/reporte/descargar")
+    @Transactional(readOnly = true)
+    @Operation(summary = "Descargar el informe de orden de mérito en PDF o Word")
+    public ResponseEntity<byte[]> descargarReporte(@PathVariable Long puestoId,
+            @RequestParam List<Long> evaluacionIds,
+            @RequestParam FormatoInformeOrdenMerito formato) throws java.io.IOException {
+        Puesto puesto = validarPuesto(puestoId);
+        List<EvaluacionOrdenMeritoDTO> evaluacionesDisponibles = listarEvaluaciones(puestoId);
+        Set<Long> idsSolicitados = evaluacionIds.stream().collect(Collectors.toSet());
+        List<EvaluacionOrdenMeritoDTO> evaluaciones = evaluacionesDisponibles.stream()
+                .filter(e -> idsSolicitados.contains(e.id())).toList();
+        if (evaluaciones.isEmpty() || evaluaciones.size() != idsSolicitados.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleccioná evaluaciones asociadas al puesto");
+        }
+
+        List<CandidatoOrdenMeritoDTO> candidatos = obtenerReporte(puestoId, evaluacionIds);
+        InformeOrdenMeritoDTO informe = new InformeOrdenMeritoDTO(puesto.getCodigo(), puesto.getNombre(),
+                puesto.getEmpresa(), puesto.getDescripcion(), LocalDateTime.now(), evaluaciones, candidatos);
+        ArchivoInformeOrdenMerito archivo = exportadorInforme.exportar(informe, formato);
+        String nombreArchivo = "orden-merito-" + puesto.getCodigo().replaceAll("[^A-Za-z0-9_-]", "_")
+                + "." + archivo.extension();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(archivo.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(nombreArchivo, StandardCharsets.UTF_8).build().toString())
+                .body(archivo.contenido());
     }
 
     private CandidatoOrdenMeritoDTO armarResultado(Cuestionario cuestionario, Puesto puesto, Map<Long, Double> puntajes) {
@@ -158,5 +200,9 @@ public class OrdenMeritoController {
 
     private String fecha(LocalDateTime fecha) {
         return fecha == null ? "" : FECHA.format(fecha);
+    }
+
+    private String fechaISO(LocalDateTime fecha) {
+        return fecha == null ? "" : fecha.toLocalDate().toString();
     }
 }

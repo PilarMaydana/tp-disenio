@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { UserProfileBadge } from '@/components/molecules/UserProfileBadge';
@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 import { User } from '@/types/auth';
+import { AppNotification, notificationService } from '@/services/notificationService';
 
 export interface TopbarProps {
   consultorNombre?: string;
@@ -44,6 +45,46 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
         role: 'CONSULTOR',
       }
     : user || DEFAULT_MOCK_CONSULTOR;
+  const notificationUserId = user?.id || (consultorNombre ? displayUser.id : null);
+  const notificationUserName = user?.name || (consultorNombre ? displayUser.name : null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [openedNotificationId, setOpenedNotificationId] = useState<string | null>(null);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (notificationUserId && notificationUserName) {
+        setNotifications(notificationService.initializeForUser({ id: notificationUserId, name: notificationUserName }));
+      } else {
+        setNotifications([]);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [notificationUserId, notificationUserName]);
+
+  const abrirNotificacion = (notification: AppNotification) => {
+    if (!notificationUserId) return;
+    setOpenedNotificationId((current) => current === notification.id ? null : notification.id);
+    if (!notification.isRead) {
+      setNotifications(notificationService.markAsRead(notificationUserId, notification.id));
+    }
+  };
+
+  const marcarComoLeida = (notificationId: string) => {
+    if (!notificationUserId) return;
+    setNotifications(notificationService.markAsRead(notificationUserId, notificationId));
+  };
+
+  const formatoFechaNotificacion = (createdAt: string) => new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(createdAt));
+
+  const confirmarSalida = () => {
+    setLogoutConfirmationOpen(false);
+    handleLogout();
+  };
 
   return (
     <header
@@ -74,47 +115,66 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
 
       {/* Sección Derecha: Usuario Consultor o Salir para Candidato */}
       <div className="flex items-center gap-3 md:gap-6">
-        {isCandidato ? (
+        {!isCandidato && <UserProfileBadge user={displayUser} />}
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setNotificationsOpen((open) => !open)}
+              className="relative cursor-pointer rounded-lg border border-white/20 bg-transparent p-2 text-white transition-colors hover:bg-white/10"
+              aria-label="Notificaciones"
+              aria-expanded={notificationsOpen}
+              aria-controls="panel-notificaciones"
+              title="Notificaciones"
+            >
+              <Icon name="notifications" size={20} />
+              {notifications.length > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#D32F2F]" />}
+            </button>
+
+            {notificationsOpen && <section id="panel-notificaciones" aria-label="Panel de notificaciones" className="absolute right-0 z-50 mt-3 w-[min(90vw,24rem)] overflow-hidden rounded-xl border border-[#E3DFE9] bg-white text-[#24212A] shadow-xl">
+              <header className="border-b border-[#E7E4EB] bg-[#FAF9FC] px-5 py-4 text-center">
+                <h2 className="text-base font-semibold">Notificaciones</h2>
+                {notifications.length > 0 && <p className="mt-1 text-xs text-[#77717E]">{notifications.length} {notifications.length === 1 ? 'mensaje' : 'mensajes'}</p>}
+              </header>
+              {notifications.length === 0 ? <div className="px-5 py-12 text-center text-sm text-[#77717E]">No se encuentran notificaciones</div> : <ul className="max-h-[min(60vh,24rem)] space-y-2 overflow-y-auto p-3 text-center">
+                {notifications.map((notification) => {
+                  const isOpen = openedNotificationId === notification.id;
+                  return <li key={notification.id} className={`rounded-lg border px-4 py-3 transition-colors ${notification.isRead ? 'border-[#D4D0D9] bg-[#E8E5EB]' : 'border-[#E3D9F4] bg-[#F7F3FC]'}`}>
+                    <button type="button" onClick={() => abrirNotificacion(notification)} aria-expanded={isOpen} className="w-full text-center">
+                      <span className="block text-sm font-semibold">{notification.title}</span>
+                      <span className="mt-1 block text-xs text-[#77717E]">{formatoFechaNotificacion(notification.createdAt)}</span>
+                      {isOpen && <span className="mt-3 block text-sm leading-relaxed text-[#4A4650]">{notification.message}</span>}
+                    </button>
+                    {!notification.isRead && <button type="button" onClick={() => marcarComoLeida(notification.id)} className="mt-3 text-xs font-semibold text-[#51377F] underline-offset-2 hover:underline">Marcar como leída</button>}
+                  </li>;
+                })}
+              </ul>}
+            </section>}
+          </div>
+
           <button
             type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer text-sm font-semibold"
+            onClick={() => setLogoutConfirmationOpen(true)}
+            className={`${isCandidato ? 'flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold' : 'p-2'} cursor-pointer rounded-lg border border-white/20 bg-transparent text-white transition-colors hover:bg-white/10`}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
           >
-            <Icon name="logout" size={18} />
-            <span>Salir</span>
+            <Icon name="logout" size={20} />
+            {isCandidato && <span>Salir</span>}
           </button>
-        ) : (
-          <>
-            <UserProfileBadge user={displayUser} />
-
-            <div className="flex items-center gap-2">
-              {/* Notificaciones */}
-              <button
-                type="button"
-                className="p-2 rounded-lg bg-transparent hover:bg-white/10 text-white border border-white/20 transition-colors cursor-pointer relative"
-                aria-label="Notificaciones"
-                title="Notificaciones"
-              >
-                <Icon name="notifications" size={20} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D32F2F] rounded-full" />
-              </button>
-
-              {/* Salir */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="p-2 rounded-lg bg-transparent hover:bg-white/10 text-white border border-white/20 transition-colors cursor-pointer"
-                aria-label="Cerrar sesión"
-                title="Cerrar sesión"
-              >
-                <Icon name="logout" size={20} />
-              </button>
-            </div>
-          </>
-        )}
+        </div>
       </div>
+      {logoutConfirmationOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
+        <section role="dialog" aria-modal="true" aria-labelledby="confirmar-salida-titulo" className="w-full max-w-sm rounded-2xl bg-white px-6 py-7 text-center text-[#24212A] shadow-2xl">
+          <h2 id="confirmar-salida-titulo" className="text-lg font-semibold">¿Querés salir del sistema?</h2>
+          <p className="mt-2 text-sm text-[#6E6973]">Se cerrará tu sesión actual.</p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button type="button" onClick={() => setLogoutConfirmationOpen(false)} className="min-w-24 rounded-lg border border-[#D4CCDF] px-5 py-2 text-sm font-semibold text-[#51377F] hover:bg-[#F6F3FA]">No</button>
+            <button type="button" onClick={confirmarSalida} className="min-w-24 rounded-lg bg-[#51377F] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3F2B68]">Sí</button>
+          </div>
+        </section>
+      </div>}
     </header>
   );
 };

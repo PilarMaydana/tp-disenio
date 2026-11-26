@@ -14,6 +14,7 @@ export interface PuestoOrdenMerito {
 export interface EvaluacionOrdenMerito {
   id: string;
   fecha: string;
+  fechaISO: string;
   proyecto: string;
   estado: 'Completada' | 'Parcial';
 }
