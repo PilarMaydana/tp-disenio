@@ -39,7 +39,8 @@ public class RealLdapAuthStrategy implements ILdapAuthStrategy {
         if (usuario == null || contrasena == null || usuario.isBlank() || contrasena.isBlank()) {
             return false;
         }
-        String principal = userDnPattern.replace("{0}", Rdn.escapeValue(usuario.trim()).toString());
+        String usuarioEscapado = String.valueOf(Rdn.escapeValue(usuario.trim()));
+        String principal = userDnPattern.replace("{0}", usuarioEscapado);
         Hashtable<String, String> environment = new Hashtable<>();
         environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         environment.put(Context.PROVIDER_URL, ldapUrl);

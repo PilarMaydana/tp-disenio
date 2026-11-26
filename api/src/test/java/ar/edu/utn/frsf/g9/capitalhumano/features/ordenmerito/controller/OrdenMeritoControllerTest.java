@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 class OrdenMeritoControllerTest {
 
-    private PuestoDAO puestoDAO;
     private CuestionarioOrdenMeritoDAO cuestionarioDAO;
     private ResultadoCompetenciaDAO resultadoDAO;
     private OrdenMeritoController controller;
@@ -35,7 +34,7 @@ class OrdenMeritoControllerTest {
 
     @BeforeEach
     void setUp() {
-        puestoDAO = mock(PuestoDAO.class);
+        PuestoDAO puestoDAO = mock(PuestoDAO.class);
         cuestionarioDAO = mock(CuestionarioOrdenMeritoDAO.class);
         resultadoDAO = mock(ResultadoCompetenciaDAO.class);
         controller = new OrdenMeritoController(puestoDAO, cuestionarioDAO, resultadoDAO);
