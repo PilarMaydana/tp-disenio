@@ -1,0 +1,7 @@
+app:
+  jwt:
+    # Clave exclusivamente local; application-prod.yml exige una clave externa.
+    secret: ${APP_JWT_SECRET:local-only-development-secret-not-for-production}
+  ldap:
+    url: ${APP_LDAP_URL:}
+    user-dn-pattern: ${APP_LDAP_USER_DN_PATTERN:}

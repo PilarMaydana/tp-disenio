@@ -28,3 +28,16 @@ mvnw.cmd spring-boot:run
 
 - **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **Endpoint de verificación (Ping):** [http://localhost:8080/api/ping](http://localhost:8080/api/ping)
+
+### Producción
+
+Iniciar con `SPRING_PROFILES_ACTIVE=prod` y configurar estas variables antes de arrancar. La aplicación no inicia si faltan valores obligatorios, el LDAP no usa LDAPS o la clave JWT tiene menos de 32 caracteres.
+
+| Variable | Uso |
+|---|---|
+| `APP_JWT_SECRET` | Secreto aleatorio de al menos 32 caracteres para firmar JWT. |
+| `APP_LDAP_URL` | URL del directorio LDAP, por ejemplo `ldaps://ldap.ejemplo.org:636`. |
+| `APP_LDAP_USER_DN_PATTERN` | DN del usuario con `{0}` como marcador, por ejemplo `uid={0},ou=personas,dc=ejemplo,dc=org`. |
+| `APP_CORS_ALLOWED_ORIGINS` | Orígenes permitidos del frontend, separados por coma si hay más de uno. |
+
+El patrón DN depende del directorio institucional y debe coincidir con su estructura. Las credenciales del usuario se validan mediante un bind LDAP; no se guardan en la aplicación. En producción se deshabilitan H2 Console y Swagger.

@@ -31,10 +31,13 @@ public class JwtTokenService {
     private final ObjectMapper objectMapper;
 
     public JwtTokenService(
-            @Value("${app.jwt.secret:capital-humano-super-secret-key-for-jwt-signing-2026-utn-frsf}") String secretKey,
+            @Value("${app.jwt.secret}") String secretKey,
             @Value("${app.jwt.expiration-seconds:86400}") long expirationSeconds,
             ObjectMapper objectMapper
     ) {
+        if (secretKey == null || secretKey.length() < 32) {
+            throw new IllegalArgumentException("La clave JWT debe tener al menos 32 caracteres");
+        }
         this.secretKey = secretKey;
         this.expirationSeconds = expirationSeconds;
         this.objectMapper = objectMapper;
@@ -108,6 +111,20 @@ public class JwtTokenService {
         }
     }
 
+    /** Verifica firma, expiración, rol y cuestionario asociado antes de aceptar respuestas. */
+    public boolean esTokenValidoParaCuestionario(String token, Long cuestionarioId) {
+        try {
+            TokenClaims claims = validarToken(token);
+            return "CANDIDATO".equals(claims.rol())
+                    && claims.cuestionarioId() != null
+                    && claims.cuestionarioId().equals(cuestionarioId);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Valida firma y expiración y devuelve los datos de identidad del JWT. */
+    public TokenClaims validarToken(String token) {
     /**
      * Valida la firma y la vigencia de un token generado por este servicio y devuelve sus claims.
      *
@@ -129,6 +146,30 @@ public class JwtTokenService {
             throw new AutenticacionException("Sesión inválida");
         }
         try {
+            String[] partes = token.split("\\.");
+            if (partes.length != 3) return null;
+            JsonNode header = objectMapper.readTree(Base64.getUrlDecoder().decode(partes[0]));
+            if (!"HS256".equals(header.path("alg").asText())) return null;
+
+            String contenido = partes[0] + "." + partes[1];
+            byte[] firmaEsperada = firmarHmacSha256(contenido, secretKey).getBytes(StandardCharsets.US_ASCII);
+            byte[] firmaRecibida = partes[2].getBytes(StandardCharsets.US_ASCII);
+            if (!MessageDigest.isEqual(firmaEsperada, firmaRecibida)) return null;
+
+            JsonNode payload = objectMapper.readTree(Base64.getUrlDecoder().decode(partes[1]));
+            String rol = payload.path("rol").asText();
+            String subject = payload.path("sub").asText();
+            long expiracion = payload.path("exp").asLong(0L);
+            if (subject.isBlank() || expiracion <= Instant.now().getEpochSecond()
+                    || !("CONSULTOR".equals(rol) || "CANDIDATO".equals(rol))) return null;
+
+            long usuarioId = payload.path("usuarioId").asLong(-1L);
+            if (usuarioId < 0) return null;
+            Long cuestionarioId = payload.hasNonNull("cuestionarioId")
+                    ? payload.path("cuestionarioId").asLong() : null;
+            return new TokenClaims(subject, rol, usuarioId, cuestionarioId);
+        } catch (Exception e) {
+            return null;
             byte[] json = Base64.getUrlDecoder().decode(partes[1]);
             Map<String, Object> claims = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() { });
             Object exp = claims.get("exp");
@@ -140,6 +181,8 @@ public class JwtTokenService {
             throw new AutenticacionException("Sesión inválida");
         }
     }
+
+    public record TokenClaims(String subject, String rol, Long usuarioId, Long cuestionarioId) { }
 
     private String firmarHmacSha256(String data, String key) {
         try {

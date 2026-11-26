@@ -1,39 +1,38 @@
 package ar.edu.utn.frsf.g9.capitalhumano.config;
 
+import ar.edu.utn.frsf.g9.capitalhumano.features.auth.service.JwtTokenService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Configuración de seguridad <b>temporal</b>.
- *
- * <p>Permite todas las peticiones sin autenticación y deshabilita CSRF
- * para facilitar el desarrollo inicial. Se necesita porque Spring Security
- * bloquea todo por defecto al estar en el classpath.</p>
- *
- * <p><b>TODO:</b> reemplazar por la configuración real con LDAP
- * al implementar el CU 01 (Autenticación).</p>
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Cadena de filtros que deja pasar todas las peticiones.
-     *
-     * @param http builder de seguridad HTTP
-     * @return cadena de filtros configurada
-     * @throws Exception si falla la configuración
-     */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // TODO: reemplazar por autenticación LDAP al implementar el CU 01
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenService jwtTokenService) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/h2-console/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+                        .permitAll()
+                        .requestMatchers("/api/auth/**", "/api/ping").permitAll()
+                        .requestMatchers("/api/cuestionarios/**").hasRole("CANDIDATO")
+                        .requestMatchers("/api/**").hasRole("CONSULTOR")
+                        .anyRequest().denyAll())
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class);
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
