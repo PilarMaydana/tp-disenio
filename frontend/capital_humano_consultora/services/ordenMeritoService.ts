@@ -1,4 +1,4 @@
-import { apiFetch } from './apiClient';
+import { API_BASE_URL, apiFetch } from './apiClient';
 
 export interface PuestoOrdenMerito {
   id: string;
@@ -63,5 +63,35 @@ export const ordenMeritoService = {
     evaluacionIds.forEach((id) => query.append('evaluacionIds', id));
     const data = await apiFetch<CandidatoOrdenMeritoResponse[]>(`/ordenes-merito/puestos/${puestoId}/reporte?${query.toString()}`);
     return data.map((candidato) => ({ ...candidato, cuestionarioId: String(candidato.cuestionarioId) }));
+  },
+
+  async descargarReporte(puestoId: string, evaluacionIds: string[], formato: 'PDF' | 'WORD') {
+    const query = new URLSearchParams({ formato });
+    evaluacionIds.forEach((id) => query.append('evaluacionIds', id));
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const response = await fetch(`${API_BASE_URL}/ordenes-merito/puestos/${puestoId}/reporte/descargar?${query.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.mensaje || body?.message || body?.detail || 'No se pudo descargar el informe.');
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const nombreCodificado = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const nombreSimple = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+    const nombre = nombreCodificado
+      ? decodeURIComponent(nombreCodificado)
+      : nombreSimple || `orden-merito.${formato === 'PDF' ? 'pdf' : 'docx'}`;
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    URL.revokeObjectURL(url);
   },
 };

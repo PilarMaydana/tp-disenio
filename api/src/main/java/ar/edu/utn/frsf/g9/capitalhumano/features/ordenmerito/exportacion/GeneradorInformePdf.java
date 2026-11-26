@@ -102,7 +102,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
     }
 
     private String fecha(java.time.LocalDateTime fecha) { return fecha == null ? "-" : FECHA_HORA.format(fecha); }
-    private String texto(String valor) { return valor == null || valor.isBlank() ? "-" : valor; }
+    private static String texto(String valor) { return valor == null || valor.isBlank() ? "-" : valor; }
 
     private static final class PdfBuilder {
         private final PDDocument documento;
@@ -122,7 +122,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             contenido = new PDPageContentStream(documento, pagina);
             y = ALTO_PAGINA - MARGEN;
             if (!primera) {
-                agregarTexto("ORDEN DE MÉRITO - " + texto(informe.codigoPuesto()), 9, true);
+                agregarTexto("ORDEN DE MÉRITO - " + GeneradorInformePdf.texto(informe.codigoPuesto()), 9, true);
                 y -= 4;
             }
         }

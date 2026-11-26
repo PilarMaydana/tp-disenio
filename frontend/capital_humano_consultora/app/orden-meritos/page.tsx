@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, MoreHorizontal, Search, SlidersHorizontal } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { CandidatoOrdenMerito, EvaluacionOrdenMerito, PuestoOrdenMerito, ordenMeritoService } from '@/services/ordenMeritoService';
@@ -25,6 +25,8 @@ function OrdenMeritosContent() {
   const [buscando, setBuscando] = useState(false);
   const [puestoSeleccionado, setPuestoSeleccionado] = useState<PuestoOrdenMerito | null>(null);
   const [puestoReporte, setPuestoReporte] = useState<PuestoOrdenMerito | null>(null);
+  const [menuExportacionAbierto, setMenuExportacionAbierto] = useState(false);
+  const [exportando, setExportando] = useState(false);
   const [evaluacionesSeleccionadas, setEvaluacionesSeleccionadas] = useState<string[]>([]);
   const [filtroNombreEvaluacion, setFiltroNombreEvaluacion] = useState('');
   const [modoFechaEvaluacion, setModoFechaEvaluacion] = useState<'dia' | 'rango'>('dia');
@@ -212,24 +214,44 @@ function OrdenMeritosContent() {
     setPuestoSeleccionado(null);
   }
 
+  async function descargarReporte(formato: 'PDF' | 'WORD') {
+    if (!puestoReporte) return;
+    setMenuExportacionAbierto(false);
+    setExportando(true);
+    setError('');
+    try {
+      await ordenMeritoService.descargarReporte(puestoReporte.id, evaluacionesSeleccionadas, formato);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo descargar el informe.');
+    } finally {
+      setExportando(false);
+    }
+  }
+
   const reporteVisible = !puestoSeleccionado && evaluacionesSeleccionadas.length > 0;
   const empresaNombre = (puesto: PuestoOrdenMerito) => puesto.empresaNombre || empresas.find((e) => e.id === puesto.empresaId)?.nombre || 'Empresa';
+  const candidatosAptos = candidatos.filter((c) => c.estado === 'apto');
+  const candidatosIncompletos = candidatos.filter((c) => c.estado === 'incompleto');
+  const candidatosSinMinimos = candidatos.filter((c) => c.estado === 'minimo');
+  const candidatosPendientes = candidatos.filter((c) => c.estado === 'pendiente');
+  const evaluacionesDelReporte = evaluaciones.filter((e) => evaluacionesSeleccionadas.includes(e.id));
 
-  return <div className={`mx-auto w-full max-w-7xl space-y-6 ${reporteVisible ? 'print:max-w-none print:space-y-3 print:text-black' : ''}`}>
+  return <div className={`orden-merito-report mx-auto w-full max-w-7xl space-y-6 ${reporteVisible ? 'print:max-w-none print:space-y-3 print:text-black' : ''}`}>
     <header className="border-b-4 border-[#E4E1E8] pb-3 text-center"><h1 className="text-2xl font-bold tracking-wide text-[#27232D] sm:text-3xl">ORDEN DE MÉRITOS</h1></header>
     {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
 
     {reporteVisible ? <>
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><button onClick={() => { setPuestoSeleccionado(puestoReporte); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a evaluaciones</button><p className="text-sm text-[#77717E]">{puestoReporte?.nombrePuesto || 'Puesto seleccionado'} · {evaluacionesSeleccionadas.length === evaluaciones.length ? 'Todas las evaluaciones' : `${evaluacionesSeleccionadas.length} evaluaciones`}</p></div><Button onClick={() => window.print()}>Imprimir</Button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><button onClick={() => { setPuestoSeleccionado(puestoReporte); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a evaluaciones</button><p className="text-sm text-[#77717E]">{puestoReporte?.nombrePuesto || 'Puesto seleccionado'} · {evaluacionesSeleccionadas.length === evaluaciones.length ? 'Todas las evaluaciones' : `${evaluacionesSeleccionadas.length} evaluaciones`}</p></div><div className="flex items-center gap-2"><Button onClick={() => window.print()}>Imprimir</Button><div className="relative"><button type="button" disabled={exportando} aria-label="Más opciones de descarga" aria-expanded={menuExportacionAbierto} onClick={() => setMenuExportacionAbierto((abierto) => !abierto)} className="rounded-lg border border-[#D4CCDF] bg-white p-2 text-[#51377F] hover:bg-[#F6F3FA] disabled:opacity-60"><MoreHorizontal size={20}/></button>{menuExportacionAbierto && <div className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-lg border border-[#E3DFE9] bg-white py-1 text-sm shadow-lg"><button type="button" onClick={() => descargarReporte('PDF')} className="w-full px-4 py-2.5 text-left hover:bg-[#F6F3FA]">Descargar PDF</button><button type="button" onClick={() => descargarReporte('WORD')} className="w-full px-4 py-2.5 text-left hover:bg-[#F6F3FA]">Descargar Word</button></div>}</div></div></div>
+      <div className="hidden text-center print:block"><h1 className="text-2xl font-bold">ORDEN DE MÉRITO</h1><p className="mt-2 text-sm">Puesto: {puestoReporte?.codigo} · {puestoReporte?.nombrePuesto}</p><p className="text-sm">Empresa: {empresaNombre(puestoReporte!)}</p><p className="text-xs">Evaluaciones incluidas: {evaluacionesDelReporte.map((e) => `${e.id} - ${e.proyecto} (${e.fecha})`).join('; ') || 'No hay información disponible'}</p></div>
       <section className={`${panelClass} overflow-hidden print:break-inside-avoid print:border-gray-300 print:shadow-none`}>
-        <div className="flex items-center justify-between border-b border-[#E7E4EB] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-semibold"><Award size={21} className="text-[#6548A0]"/> Candidatos aptos</h2><span className="rounded-full bg-[#E9E0FA] px-3 py-1 text-xs font-semibold text-[#51377F]">Total: {candidatos.filter(c => c.estado === 'apto').length}</span></div>
-        <div className="overflow-x-auto print:overflow-visible"><table className="w-full min-w-[680px] text-left text-sm print:min-w-0"><thead className="text-xs text-[#6B6670]"><tr>{['Orden','Tipo y Nro Doc','Apellido','Nombre','Puntaje obtenido'].map(x=><th key={x} className="px-5 py-3 font-semibold">{x}</th>)}</tr></thead><tbody>{candidatos.filter(c=>c.estado==='apto').map((c,index)=><tr key={c.cuestionarioId} className="border-t border-[#F0EDF3]"><td className="px-5 py-3.5 font-bold">#{index+1}</td><td className="px-5 py-3.5">{c.documento}</td><td className="px-5 py-3.5 font-semibold">{c.apellido}</td><td className="px-5 py-3.5">{c.nombre}</td><td className="px-5 py-3.5 font-bold">{c.puntaje?.toFixed(2)}</td></tr>)}</tbody></table></div>
+        <div className="flex items-center justify-between border-b border-[#E7E4EB] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-semibold"><Award size={21} className="text-[#6548A0]"/> Candidatos aptos</h2><span className="rounded-full bg-[#E9E0FA] px-3 py-1 text-xs font-semibold text-[#51377F]">Total: {candidatosAptos.length}</span></div>
+        <div className="overflow-x-auto print:overflow-visible"><table className="w-full min-w-[680px] text-left text-sm print:min-w-0"><thead className="text-xs text-[#6B6670]"><tr>{['Orden','Tipo y Nro Doc','Apellido','Nombre','Puntaje obtenido'].map(x=><th key={x} className="px-5 py-3 font-semibold">{x}</th>)}</tr></thead><tbody>{candidatosAptos.length ? candidatosAptos.map((c,index)=><tr key={c.cuestionarioId} className="border-t border-[#F0EDF3]"><td className="px-5 py-3.5 font-bold">#{index+1}</td><td className="px-5 py-3.5">{c.documento}</td><td className="px-5 py-3.5 font-semibold">{c.apellido}</td><td className="px-5 py-3.5">{c.nombre}</td><td className="px-5 py-3.5 font-bold">{c.puntaje?.toFixed(2)}</td></tr>) : <tr><td colSpan={5} className="px-5 py-5 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</td></tr>}</tbody></table></div>
       </section>
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ClipboardList size={20} className="text-[#77717E]"/> Cuestionarios incompletos</h2><div className="space-y-3">{candidatos.filter(c=>c.estado==='incompleto').map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>)}</div></section>
-        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ArrowRight size={20} className="text-[#77717E]"/> No alcanzan los mínimos requeridos</h2><div className="space-y-3">{candidatos.filter(c=>c.estado==='minimo').map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>)}</div></section>
+        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ClipboardList size={20} className="text-[#77717E]"/> Cuestionarios incompletos</h2><div className="space-y-3">{candidatosIncompletos.length ? candidatosIncompletos.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</p>}</div></section>
+        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ArrowRight size={20} className="text-[#77717E]"/> No alcanzan los mínimos requeridos</h2><div className="space-y-3">{candidatosSinMinimos.length ? candidatosSinMinimos.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</p>}</div></section>
       </div>
-      {candidatos.some(c=>c.estado==='pendiente')&&<section className={`${panelClass} p-5`}><h2 className="mb-3 text-lg font-semibold">Puntaje pendiente</h2><div className="grid gap-3 md:grid-cols-2">{candidatos.filter(c=>c.estado==='pendiente').map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>)}</div></section>}
+      <section className={`${panelClass} p-5`}><h2 className="mb-3 text-lg font-semibold">Puntaje pendiente</h2><div className="grid gap-3 md:grid-cols-2">{candidatosPendientes.length ? candidatosPendientes.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E] md:col-span-2">No hay información disponible para esta sección.</p>}</div></section>
       <p className="text-xs text-[#77717E] print:hidden">Los candidatos se muestran según el estado real de su cuestionario. El puntaje aparecerá cuando el sistema persista las respuestas de evaluación.</p>
     </> : puestoSeleccionado ? <>
       <div><button onClick={() => { setPuestoSeleccionado(null); setEvaluacionesSeleccionadas([]); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a resultados</button><p className="text-sm text-[#77717E]">Puesto: {puestoSeleccionado.nombrePuesto} · {empresaNombre(puestoSeleccionado)}</p><h2 className="mt-1 text-xl font-semibold">Seleccionar evaluaciones</h2></div>
