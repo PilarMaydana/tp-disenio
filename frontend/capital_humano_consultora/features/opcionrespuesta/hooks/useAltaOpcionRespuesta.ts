@@ -256,6 +256,8 @@ export function useAltaOpcionRespuesta(
     errorMessages,
     isSubmitting,
     serverError,
+    dismissServerError: () => setServerError(null),
+    clearErrors,
     createdOpcionNombre,
     handleAddItem,
     handleRemoveItem,

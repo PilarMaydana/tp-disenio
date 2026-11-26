@@ -12,6 +12,8 @@ import { ActionToolbar } from '@/components/organisms/ActionToolbar';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/constants/routes';
 import { competenciaService, ApiError } from '../services/competenciaService';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
+import { Icon } from '@/components/ui/Icon';
 
 export interface AltaCompetenciaFormProps {
   onSuccessNavigate?: () => void;
@@ -32,6 +34,7 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
     reset,
     setFocus,
     setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<CompetenciaFormData>({
     resolver: zodResolver(CompetenciaSchema),
@@ -51,6 +54,11 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
     errors.nombre?.message,
     errors.descripcion?.message,
   ].filter((msg): msg is string => Boolean(msg));
+  const mostrarErrorServidor = useAutoDismissError(serverError, () => setServerError(null));
+  const mostrarErroresValidacion = useAutoDismissError(
+    errorMessages.length ? errorMessages.join('\n') : null,
+    () => clearErrors(),
+  );
 
   const onSubmit = async (data: CompetenciaFormData) => {
     setServerError(null);
@@ -153,21 +161,25 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
         </div>
 
         {/* Flujo Alternativo 2.B: Error de servidor (ej: 409 Conflicto por código o nombre existente) */}
-        {serverError && (
+        {mostrarErrorServidor && serverError && (
           <div
             role="alert"
-            className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F]"
+            className="flex w-full items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-[#D32F2F]"
           >
-            {serverError}
+            <Icon name="error" size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span className="flex-1">{serverError}</span>
+            <button type="button" onClick={() => setServerError(null)} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
           </div>
         )}
 
         {/* Flujo Alternativo 2.A: Banner con todas las omisiones juntas (Zod o 400 detalles[]) */}
-        {errorMessages.length > 0 && (
+        {mostrarErroresValidacion && errorMessages.length > 0 && (
           <div
             role="alert"
-            className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F] flex flex-col gap-1"
+            className="flex w-full items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-[#D32F2F]"
           >
+            <Icon name="error" size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="flex-1 space-y-1">
             <span className="font-semibold">
               Por favor, complete los datos obligatorios requeridos:
             </span>
@@ -176,6 +188,8 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
                 <li key={idx}>{msg}</li>
               ))}
             </ul>
+            </div>
+            <button type="button" onClick={() => clearErrors()} aria-label="Cerrar mensajes de validación" title="Cerrar mensajes de validación" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
           </div>
         )}
 

@@ -63,10 +63,13 @@ export function useCompetencias() {
     }
   }, []);
 
+  const dismissError = useCallback(() => setError(null), []);
+
   return {
     competencias,
     isLoading,
     error,
+    dismissError,
     recargarCompetencias,
   };
 }

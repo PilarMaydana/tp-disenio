@@ -11,9 +11,14 @@ import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.apache.poi.xwpf.usermodel.XWPFTable.XWPFBorderType;
+import org.apache.poi.xwpf.model.XWPFHeaderFooterPolicy;
+import org.apache.poi.xwpf.usermodel.XWPFFooter;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTOnOff;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageMar;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTrPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STHdrFtr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STPageOrientation;
 import org.springframework.stereotype.Component;
 
@@ -35,19 +40,31 @@ public class GeneradorInformeWord implements GeneradorInformeOrdenMerito {
     public byte[] generar(InformeOrdenMeritoDTO informe) throws IOException {
         try (XWPFDocument documento = new XWPFDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
             configurarPaginaHorizontal(documento);
+            configurarNumeracion(documento);
             XWPFParagraph titulo = documento.createParagraph();
             titulo.setAlignment(ParagraphAlignment.CENTER);
+            titulo.setSpacingBefore(3000);
             XWPFRun tituloRun = titulo.createRun();
             tituloRun.setText("ORDEN DE MÉRITO");
             tituloRun.setBold(true);
             tituloRun.setFontSize(18);
             tituloRun.setFontFamily("Arial");
 
-            agregarParrafo(documento, "Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()), true);
-            agregarParrafo(documento, "Empresa: " + texto(informe.empresa()), false);
-            if (informe.descripcionPuesto() != null && !informe.descripcionPuesto().isBlank()) {
-                agregarParrafo(documento, "Descripción: " + informe.descripcionPuesto(), false);
-            }
+            XWPFParagraph puesto = documento.createParagraph();
+            puesto.setAlignment(ParagraphAlignment.CENTER);
+            XWPFRun puestoRun = puesto.createRun();
+            puestoRun.setText("Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()));
+            puestoRun.setFontFamily("Arial");
+            puestoRun.setFontSize(14);
+            puestoRun.setBold(true);
+            XWPFParagraph empresa = documento.createParagraph();
+            empresa.setAlignment(ParagraphAlignment.CENTER);
+            XWPFRun empresaRun = empresa.createRun();
+            empresaRun.setText("Empresa: " + texto(informe.empresa()));
+            empresaRun.setFontFamily("Arial");
+            empresaRun.setFontSize(12);
+
+            documento.createParagraph().setPageBreak(true);
             agregarParrafo(documento, "Fecha de generación: " + FECHA_HORA.format(informe.fechaGeneracion()), false);
 
             agregarTablaEvaluaciones(documento, informe.evaluaciones());
@@ -59,6 +76,24 @@ public class GeneradorInformeWord implements GeneradorInformeOrdenMerito {
             documento.write(salida);
             return salida.toByteArray();
         }
+    }
+
+    private void configurarNumeracion(XWPFDocument documento) {
+        XWPFHeaderFooterPolicy policy = documento.createHeaderFooterPolicy();
+        XWPFFooter footer = policy.createFooter(STHdrFtr.DEFAULT);
+        XWPFParagraph parrafo = footer.createParagraph();
+        parrafo.setAlignment(ParagraphAlignment.RIGHT);
+        XWPFRun inicio = parrafo.createRun();
+        inicio.setText("Página ");
+        inicio.setFontFamily("Arial");
+        inicio.setFontSize(8);
+        var campoPagina = parrafo.getCTP().addNewFldSimple();
+        campoPagina.setInstr("PAGE");
+        XWPFRun separador = parrafo.createRun();
+        separador.setText(" de ");
+        separador.setFontSize(8);
+        var campoTotal = parrafo.getCTP().addNewFldSimple();
+        campoTotal.setInstr("NUMPAGES");
     }
 
     private void configurarPaginaHorizontal(XWPFDocument documento) {
@@ -135,6 +170,10 @@ public class GeneradorInformeWord implements GeneradorInformeOrdenMerito {
         tabla.setTopBorder(XWPFBorderType.SINGLE, 6, 0, "777777");
         tabla.setBottomBorder(XWPFBorderType.SINGLE, 6, 0, "777777");
         completarFila(tabla.getRow(0), encabezados, true);
+        CTTrPr propiedadesFila = tabla.getRow(0).getCtRow().isSetTrPr()
+                ? tabla.getRow(0).getCtRow().getTrPr() : tabla.getRow(0).getCtRow().addNewTrPr();
+        CTOnOff encabezadoRepetible = propiedadesFila.addNewTblHeader();
+        encabezadoRepetible.setVal(Boolean.TRUE);
         return tabla;
     }
 

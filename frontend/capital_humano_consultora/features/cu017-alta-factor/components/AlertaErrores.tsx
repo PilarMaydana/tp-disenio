@@ -3,6 +3,7 @@
 import React from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ErrorItem } from '../types';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 export interface AlertaErroresProps {
   titulo?: string;
@@ -18,8 +19,10 @@ export const AlertaErrores: React.FC<AlertaErroresProps> = ({
   onDismiss,
 }) => {
   const tieneContenido = Boolean(mensajeGeneral || errores.length > 0);
+  const claveMensaje = tieneContenido ? JSON.stringify([titulo, mensajeGeneral, errores]) : null;
+  const visible = useAutoDismissError(claveMensaje, onDismiss);
 
-  if (!tieneContenido) return null;
+  if (!visible) return null;
 
   return (
     <div

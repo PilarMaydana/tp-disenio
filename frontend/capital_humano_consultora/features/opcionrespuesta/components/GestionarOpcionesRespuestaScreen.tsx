@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DataTable, Column } from '@/components/organisms/DataTable';
 import { ActionToolbar } from '@/components/organisms/ActionToolbar';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
+import { Icon } from '@/components/ui/Icon';
 import { OpcionRespuestaResumen } from '../types';
 import {
   useGestionarOpcionesRespuesta,
@@ -33,6 +35,7 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
     hasSearched,
     isLoading,
     error,
+    dismissError,
     selectedId,
     handleBuscar,
     handleSelectRow,
@@ -42,6 +45,7 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
     onNavigateNuevo,
     onNavigateSalir,
   });
+  const mostrarError = useAutoDismissError(error, dismissError);
 
   const columns: Column<OpcionRespuestaResumen>[] = useMemo(
     () => [
@@ -145,11 +149,12 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
         {/* Grilla de Resultados */}
         <div className="flex flex-col gap-2">
           {/* Mensaje de error real del backend */}
-          {error && (
+          {mostrarError && error && (
             <div
               role="alert"
               className="w-full p-4 bg-red-50 border border-red-200 rounded-xl text-sm font-medium text-[#D32F2F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-2"
             >
+              <Icon name="error" size={18} className="shrink-0" aria-hidden="true" />
               <span>{error}</span>
               <Button
                 type="button"
@@ -159,6 +164,7 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
               >
                 Reintentar
               </Button>
+              <button type="button" onClick={dismissError} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 hover:bg-red-100"><Icon name="close" size={16} aria-hidden="true" /></button>
             </div>
           )}
 

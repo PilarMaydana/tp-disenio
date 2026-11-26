@@ -92,6 +92,6 @@ export const ordenMeritoService = {
     document.body.appendChild(enlace);
     enlace.click();
     enlace.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 };

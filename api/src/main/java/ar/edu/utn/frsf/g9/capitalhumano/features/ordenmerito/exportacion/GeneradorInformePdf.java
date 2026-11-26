@@ -39,13 +39,11 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             PdfBuilder pdf = new PdfBuilder(documento, informe);
             pdf.nuevaPagina(true);
             pdf.agregarTextoCentrado("ORDEN DE MÉRITO", 17, true);
-            pdf.agregarTexto("Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()), 10, true);
-            pdf.agregarTexto("Empresa: " + texto(informe.empresa()), 9, false);
-            if (informe.descripcionPuesto() != null && !informe.descripcionPuesto().isBlank()) {
-                pdf.agregarTexto("Descripción: " + informe.descripcionPuesto(), 9, false);
-            }
-            pdf.agregarTexto("Generado: " + FECHA_HORA.format(informe.fechaGeneracion()), 9, false);
+            pdf.agregarTextoCentrado("Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()), 12, true);
+            pdf.agregarTextoCentrado("Empresa: " + texto(informe.empresa()), 11, false);
 
+            pdf.nuevaPagina(false);
+            pdf.agregarTexto("Generado: " + FECHA_HORA.format(informe.fechaGeneracion()), 9, false);
             agregarTablaEvaluaciones(pdf, informe.evaluaciones());
             agregarTablaCandidatos(pdf, "Candidatos aptos", filtrar(informe.candidatos(), "APTO"));
             agregarTablaCandidatos(pdf, "No alcanzan los mínimos", filtrar(informe.candidatos(), "NO_ALCANZA_MINIMOS"));
@@ -53,8 +51,26 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             agregarTablaCandidatos(pdf, "Cuestionarios incompletos", filtrar(informe.candidatos(), "CUESTIONARIO_INCOMPLETO"));
 
             pdf.cerrarPagina();
+            agregarNumeracion(documento);
             documento.save(salida);
             return salida.toByteArray();
+        }
+    }
+
+    private void agregarNumeracion(PDDocument documento) throws IOException {
+        int total = documento.getNumberOfPages();
+        for (int indice = 0; indice < total; indice++) {
+            PDPage pagina = documento.getPage(indice);
+            String etiqueta = "Página " + (indice + 1) + " de " + total;
+            float ancho = NORMAL.getStringWidth(etiqueta) / 1000 * 8;
+            try (PDPageContentStream pie = new PDPageContentStream(documento, pagina,
+                    PDPageContentStream.AppendMode.APPEND, true, true)) {
+                pie.beginText();
+                pie.setFont(NORMAL, 8);
+                pie.newLineAtOffset(ANCHO_PAGINA - MARGEN - ancho, 15);
+                pie.showText(etiqueta);
+                pie.endText();
+            }
         }
     }
 
@@ -147,6 +163,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
         }
 
         private void texto(String texto, float x, float baseline, float tamanio, boolean negrita) throws IOException {
+            contenido.setNonStrokingColor(Color.BLACK);
             contenido.beginText();
             contenido.setFont(negrita ? NEGRITA : NORMAL, tamanio);
             contenido.newLineAtOffset(x, baseline);

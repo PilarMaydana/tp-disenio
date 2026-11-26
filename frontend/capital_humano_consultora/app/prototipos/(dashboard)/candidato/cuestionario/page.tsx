@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { evaluacionService } from '@/services/evaluacionService';
 import { Evaluacion } from '@/types/evaluacion';
 import { cuestionarioRespuestaService, PreguntaCuestionario, ResultadoCuestionario } from '@/services/cuestionarioRespuestaService';
 import { EvaluationCard } from '@/components/organisms/EvaluationCard';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 export default function MiCuestionarioPage() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function MiCuestionarioPage() {
   const [iniciado, setIniciado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const mostrarError = useAutoDismissError(error, () => setError(''));
   const [resultado, setResultado] = useState<ResultadoCuestionario | null>(null);
 
   useEffect(() => {
@@ -127,13 +129,13 @@ export default function MiCuestionarioPage() {
               <span>{opcion.descripcion}</span>
             </label>)}</div>
           </fieldset>)}
-          {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          {mostrarError && error && <div role="alert" className="flex items-start gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true"/><p className="flex-1">{error}</p><button type="button" onClick={() => setError('')} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="rounded p-1 hover:bg-red-100"><X size={16} aria-hidden="true"/></button></div>}
           <div className="flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" onClick={handleSaveProgress} isLoading={guardando} disabled={preguntas.length === 0 || Object.keys(selecciones).length === 0 || Object.keys(selecciones).length === preguntas.length}>Guardar avance y salir</Button><Button type="submit" isLoading={guardando} disabled={preguntas.length === 0 || guardando}>Finalizar cuestionario</Button></div>
         </form>
       ) : evaluacion ? (
         <div className="flex flex-col gap-4">
           <EvaluationCard evaluacion={evaluacion} onAction={handleAction} />
-          {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          {mostrarError && error && <div role="alert" className="flex items-start gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true"/><p className="flex-1">{error}</p><button type="button" onClick={() => setError('')} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="rounded p-1 hover:bg-red-100"><X size={16} aria-hidden="true"/></button></div>}
           {guardando && <p className="text-center text-sm text-[#757575]">Cargando cuestionario…</p>}
         </div>
       ) : (

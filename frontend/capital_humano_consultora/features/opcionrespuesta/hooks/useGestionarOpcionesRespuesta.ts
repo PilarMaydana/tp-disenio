@@ -88,6 +88,8 @@ export function useGestionarOpcionesRespuesta(
     setSelectedId(String(row.id));
   }, []);
 
+  const dismissError = useCallback(() => setError(null), []);
+
   // Botón «Nuevo» -> CU 29
   const handleNuevo = useCallback(() => {
     if (options.onNavigateNuevo) {
@@ -124,6 +126,7 @@ export function useGestionarOpcionesRespuesta(
     hasSearched,
     isLoading,
     error,
+    dismissError,
     selectedId,
     selectedOpcion,
     handleBuscar,

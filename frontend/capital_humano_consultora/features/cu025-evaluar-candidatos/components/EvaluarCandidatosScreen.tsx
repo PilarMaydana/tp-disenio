@@ -15,6 +15,7 @@ import { ROUTES } from '@/constants/routes';
 import { useEvaluarCandidatos } from '../hooks/useEvaluarCandidatos';
 import { CandidatoBusqueda, CandidatoClave } from '../types';
 import { ModalMensaje } from './ModalMensaje';
+import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 const PASOS = [
   { id: 'candidatos', label: 'Candidatos' },
@@ -56,6 +57,7 @@ const COLUMNAS: Column<CandidatoClave>[] = [
 export const EvaluarCandidatosScreen: React.FC = () => {
   const router = useRouter();
   const cu = useEvaluarCandidatos();
+  const mostrarErrorGeneral = useAutoDismissError(cu.errorGeneral, () => cu.setErrorGeneral(null));
   const irAPantallaPrincipal = () => router.push(ROUTES.HOME);
 
   // Mapa nroCandidato -> candidato, para recuperar los datos desde la lista de transferencia
@@ -104,7 +106,7 @@ export const EvaluarCandidatosScreen: React.FC = () => {
 
       <Stepper steps={PASOS} currentStep={cu.paso} />
 
-      {cu.errorGeneral && (
+      {mostrarErrorGeneral && cu.errorGeneral && (
         <div role="alert" className="p-4 bg-red-50 border-2 border-red-300 rounded-xl flex items-start gap-3">
           <Icon name="error" size={22} className="text-[#D32F2F] shrink-0" />
           <p className="flex-1 text-sm font-medium text-red-800">{cu.errorGeneral}</p>
