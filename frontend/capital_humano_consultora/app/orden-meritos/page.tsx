@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, FileText, FileType2, MoreHorizontal, Printer, Search, SlidersHorizontal, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, FileSpreadsheet, FileText, MoreHorizontal, Printer, Search, SlidersHorizontal, X } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { CandidatoOrdenMerito, EvaluacionOrdenMerito, PuestoOrdenMerito, ordenMeritoService } from '@/services/ordenMeritoService';
@@ -216,7 +216,7 @@ function OrdenMeritosContent() {
     setPuestoSeleccionado(null);
   }
 
-  async function descargarReporte(formato: 'PDF' | 'WORD') {
+  async function descargarReporte(formato: 'WORD' | 'EXCEL') {
     if (!puestoReporte) return;
     setMenuExportacionAbierto(false);
     setExportando(true);
@@ -225,6 +225,19 @@ function OrdenMeritosContent() {
       await ordenMeritoService.descargarReporte(puestoReporte.id, evaluacionesSeleccionadas, formato);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo descargar el informe.');
+    } finally {
+      setExportando(false);
+    }
+  }
+
+  async function imprimirReporte() {
+    if (!puestoReporte) return;
+    setExportando(true);
+    setError('');
+    try {
+      await ordenMeritoService.imprimirReporte(puestoReporte.id, evaluacionesSeleccionadas);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo abrir el PDF para imprimir.');
     } finally {
       setExportando(false);
     }
@@ -243,7 +256,7 @@ function OrdenMeritosContent() {
     {mostrarError && error && <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0"/><p className="flex-1">{error}</p><button type="button" onClick={() => setError('')} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 text-red-700 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700"><X size={16} aria-hidden="true"/></button></div>}
 
     {reporteVisible ? <>
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><button onClick={() => { setPuestoSeleccionado(puestoReporte); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a evaluaciones</button><p className="text-sm text-[#77717E]">{puestoReporte?.nombrePuesto || 'Puesto seleccionado'} · {evaluacionesSeleccionadas.length === evaluaciones.length ? 'Todas las evaluaciones' : `${evaluacionesSeleccionadas.length} evaluaciones`}</p></div><div className="flex items-center gap-2"><Button onClick={() => window.print()} aria-label="Imprimir orden de mérito"><Printer size={17} aria-hidden="true"/>Imprimir</Button><div className="relative"><button type="button" disabled={exportando} aria-label="Más opciones de descarga" aria-expanded={menuExportacionAbierto} onClick={() => setMenuExportacionAbierto((abierto) => !abierto)} className="rounded-lg border border-[#D4CCDF] bg-white p-2 text-[#51377F] hover:bg-[#F6F3FA] disabled:opacity-60"><MoreHorizontal size={20}/></button>{menuExportacionAbierto && <div className="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-lg border border-[#E3DFE9] bg-white py-1 text-sm shadow-lg"><button type="button" onClick={() => descargarReporte('PDF')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileType2 size={18} aria-hidden="true" className="text-red-700"/><span>Descargar archivo PDF</span></button><button type="button" onClick={() => descargarReporte('WORD')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileText size={18} aria-hidden="true" className="text-blue-700"/><span>Descargar documento Word</span></button></div>}</div></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><button onClick={() => { setPuestoSeleccionado(puestoReporte); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a evaluaciones</button><p className="text-sm text-[#77717E]">{puestoReporte?.nombrePuesto || 'Puesto seleccionado'} · {evaluacionesSeleccionadas.length === evaluaciones.length ? 'Todas las evaluaciones' : `${evaluacionesSeleccionadas.length} evaluaciones`}</p></div><div className="flex items-center gap-2"><Button onClick={imprimirReporte} isLoading={exportando} aria-label="Imprimir orden de mérito"><Printer size={17} aria-hidden="true"/>Imprimir</Button><div className="relative"><button type="button" disabled={exportando} aria-label="Más opciones de descarga" aria-expanded={menuExportacionAbierto} onClick={() => setMenuExportacionAbierto((abierto) => !abierto)} className="rounded-lg border border-[#D4CCDF] bg-white p-2 text-[#51377F] hover:bg-[#F6F3FA] disabled:opacity-60"><MoreHorizontal size={20}/></button>{menuExportacionAbierto && <div className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-lg border border-[#E3DFE9] bg-white py-1 text-sm shadow-lg"><button type="button" onClick={() => descargarReporte('EXCEL')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileSpreadsheet size={18} aria-hidden="true" className="text-[#28744A]"/><span>Descargar planilla Excel</span></button><button type="button" onClick={() => descargarReporte('WORD')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileText size={18} aria-hidden="true" className="text-blue-700"/><span>Descargar documento Word</span></button></div>}</div></div></div>
       <div className="hidden text-center print:block"><h1 className="text-2xl font-bold">ORDEN DE MÉRITO</h1><p className="mt-2 text-sm">Puesto: {puestoReporte?.codigo} · {puestoReporte?.nombrePuesto}</p><p className="text-sm">Empresa: {empresaNombre(puestoReporte!)}</p><p className="text-xs">Evaluaciones incluidas: {evaluacionesDelReporte.map((e) => `${e.id} - ${e.proyecto} (${e.fecha})`).join('; ') || 'No hay información disponible'}</p></div>
       <section className={`${panelClass} overflow-hidden print:break-inside-avoid print:border-gray-300 print:shadow-none`}>
         <div className="flex items-center justify-between border-b border-[#E7E4EB] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-semibold"><Award size={21} className="text-[#6548A0]"/> Candidatos aptos</h2><span className="rounded-full bg-[#E9E0FA] px-3 py-1 text-xs font-semibold text-[#51377F]">Total: {candidatosAptos.length}</span></div>

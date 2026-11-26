@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -131,13 +132,13 @@ public class OrdenMeritoController {
 
     @GetMapping("/puestos/{puestoId}/reporte/descargar")
     @Transactional(readOnly = true)
-    @Operation(summary = "Descargar el informe de orden de mérito en PDF o Word")
+    @Operation(summary = "Descargar el informe de orden de mérito en Excel o Word, o generar PDF para impresión")
     public ResponseEntity<byte[]> descargarReporte(@PathVariable Long puestoId,
             @RequestParam List<Long> evaluacionIds,
             @RequestParam FormatoInformeOrdenMerito formato) throws java.io.IOException {
         Puesto puesto = validarPuesto(puestoId);
         List<EvaluacionOrdenMeritoDTO> evaluacionesDisponibles = listarEvaluaciones(puestoId);
-        Set<Long> idsSolicitados = evaluacionIds.stream().collect(Collectors.toSet());
+        Set<Long> idsSolicitados = new HashSet<>(evaluacionIds);
         List<EvaluacionOrdenMeritoDTO> evaluaciones = evaluacionesDisponibles.stream()
                 .filter(e -> idsSolicitados.contains(e.id())).toList();
         if (evaluaciones.isEmpty() || evaluaciones.size() != idsSolicitados.size()) {

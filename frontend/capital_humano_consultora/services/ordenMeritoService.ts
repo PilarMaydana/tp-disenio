@@ -42,6 +42,25 @@ interface PuestoOrdenMeritoResponse extends Omit<PuestoOrdenMerito, 'id' | 'empr
 interface EvaluacionOrdenMeritoResponse extends Omit<EvaluacionOrdenMerito, 'id'> { id: number }
 interface CandidatoOrdenMeritoResponse extends Omit<CandidatoOrdenMerito, 'cuestionarioId'> { cuestionarioId: number }
 
+async function solicitarArchivoReporte(
+  puestoId: string,
+  evaluacionIds: string[],
+  formato: 'PDF' | 'WORD' | 'EXCEL',
+) {
+  const query = new URLSearchParams({ formato });
+  evaluacionIds.forEach((id) => query.append('evaluacionIds', id));
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  const response = await fetch(`${API_BASE_URL}/ordenes-merito/puestos/${puestoId}/reporte/descargar?${query.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.mensaje || body?.message || body?.detail || 'No se pudo generar el archivo del informe.');
+  }
+  return response;
+}
+
 export const ordenMeritoService = {
   async buscarPuestos(filtros: { codigo?: string; nombrePuesto?: string; empresa?: string }) {
     const data = await apiFetch<PuestoOrdenMeritoResponse[]>('/ordenes-merito/puestos', { params: filtros });
@@ -65,26 +84,15 @@ export const ordenMeritoService = {
     return data.map((candidato) => ({ ...candidato, cuestionarioId: String(candidato.cuestionarioId) }));
   },
 
-  async descargarReporte(puestoId: string, evaluacionIds: string[], formato: 'PDF' | 'WORD') {
-    const query = new URLSearchParams({ formato });
-    evaluacionIds.forEach((id) => query.append('evaluacionIds', id));
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    const response = await fetch(`${API_BASE_URL}/ordenes-merito/puestos/${puestoId}/reporte/descargar?${query.toString()}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      throw new Error(body?.mensaje || body?.message || body?.detail || 'No se pudo descargar el informe.');
-    }
-
+  async descargarReporte(puestoId: string, evaluacionIds: string[], formato: 'WORD' | 'EXCEL') {
+    const response = await solicitarArchivoReporte(puestoId, evaluacionIds, formato);
     const blob = await response.blob();
     const disposition = response.headers.get('Content-Disposition') || '';
     const nombreCodificado = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
     const nombreSimple = disposition.match(/filename="?([^";]+)"?/i)?.[1];
     const nombre = nombreCodificado
       ? decodeURIComponent(nombreCodificado)
-      : nombreSimple || `orden-merito.${formato === 'PDF' ? 'pdf' : 'docx'}`;
+      : nombreSimple || `orden-merito.${formato === 'EXCEL' ? 'xlsx' : 'docx'}`;
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement('a');
     enlace.href = url;
@@ -93,5 +101,27 @@ export const ordenMeritoService = {
     enlace.click();
     enlace.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  async imprimirReporte(puestoId: string, evaluacionIds: string[]) {
+    const ventanaImpresion = window.open('', '_blank');
+    if (!ventanaImpresion) {
+      throw new Error('Permití las ventanas emergentes para abrir el PDF de impresión.');
+    }
+
+    try {
+      const response = await solicitarArchivoReporte(puestoId, evaluacionIds, 'PDF');
+      const urlPdf = URL.createObjectURL(await response.blob());
+      ventanaImpresion.onload = () => {
+        ventanaImpresion.focus();
+        window.setTimeout(() => ventanaImpresion.print(), 500);
+      };
+      ventanaImpresion.location.replace(urlPdf);
+      ventanaImpresion.addEventListener('afterprint', () => URL.revokeObjectURL(urlPdf), { once: true });
+      window.setTimeout(() => URL.revokeObjectURL(urlPdf), 10 * 60 * 1000);
+    } catch (error) {
+      ventanaImpresion.close();
+      throw error;
+    }
   },
 };
