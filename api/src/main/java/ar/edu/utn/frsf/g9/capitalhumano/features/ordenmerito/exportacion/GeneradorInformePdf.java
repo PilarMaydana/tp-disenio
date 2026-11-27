@@ -166,10 +166,13 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
                 agregarTexto("Descripción", 9, true);
                 String[] descripcion = envolver(informe.descripcionPuesto(), ANCHO_TABLA, 9);
                 int lineasVisibles = Math.min(descripcion.length, 3);
-                for (int i = 0; i < lineasVisibles; i++) {
-                    String linea = descripcion[i];
-                    if (i == lineasVisibles - 1 && descripcion.length > lineasVisibles) linea += "...";
+                int numeroLinea = 0;
+                for (String textoLinea : descripcion) {
+                    if (numeroLinea >= lineasVisibles) break;
+                    String linea = textoLinea;
+                    if (numeroLinea == lineasVisibles - 1 && descripcion.length > lineasVisibles) linea += "...";
                     agregarTexto(linea, 9, false);
+                    numeroLinea++;
                 }
             }
 
