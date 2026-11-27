@@ -15,7 +15,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class JwtTokenServiceTest {
 
-    private final JwtTokenService servicio = new JwtTokenService("clave-de-prueba", 3600, new ObjectMapper());
+    /** La clave debe tener al menos 32 caracteres. */
+    private static final String CLAVE = "clave-de-prueba-de-al-menos-32-caracteres";
+
+    private final JwtTokenService servicio = new JwtTokenService(CLAVE, 3600, new ObjectMapper());
 
     @Test
     @DisplayName("Un token generado por el servicio es válido y conserva sus claims")
@@ -42,7 +45,7 @@ class JwtTokenServiceTest {
     @Test
     @DisplayName("Un token vencido se rechaza")
     void tokenVencido() {
-        JwtTokenService vencido = new JwtTokenService("clave-de-prueba", -10, new ObjectMapper());
+        JwtTokenService vencido = new JwtTokenService(CLAVE, -10, new ObjectMapper());
         String token = vencido.generarTokenCandidato("40111222", 4L, 9L);
 
         assertThatThrownBy(() -> servicio.validarToken(token))

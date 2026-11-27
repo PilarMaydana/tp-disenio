@@ -7,6 +7,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dto.CandidatoClaveDT
 import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dto.ConfirmarEvaluacionRequestDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dto.EvaluacionCreadaDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.ConsultorAutenticadoEnTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EvaluacionConcurrenciaTest {
 
     /** Candidato del seed sin cuestionarios (no lo usa ningún otro test). */
-    private static final long CANDIDATO = 7L;
+    private static final long CANDIDATO = 22L;   // FERREYRA
     private static final int ENVIOS = 3;
 
     @Autowired
@@ -67,7 +68,12 @@ class EvaluacionConcurrenciaTest {
         CountDownLatch largada = new CountDownLatch(1);
         Callable<EvaluacionCreadaDTO> confirmar = () -> {
             largada.await();
-            return gestorCandidatos.evaluarCandidatos(request);
+            ConsultorAutenticadoEnTest.autenticar();
+            try {
+                return gestorCandidatos.evaluarCandidatos(request);
+            } finally {
+                ConsultorAutenticadoEnTest.limpiar();
+            }
         };
 
         ExecutorService hilos = Executors.newFixedThreadPool(ENVIOS);

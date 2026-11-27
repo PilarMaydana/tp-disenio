@@ -2,7 +2,6 @@ package ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario;
 
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dao.CuestionarioDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.CuestionarioWizardDTO;
-import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.OpcionCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.PreguntaCuestionarioDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.dto.RespuestaBloqueDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.exception.CuestionarioNoDisponibleException;
@@ -19,8 +18,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import ar.edu.utn.frsf.g9.capitalhumano.features.cuestionario.model.PreguntaAsignada;
+import ar.edu.utn.frsf.g9.capitalhumano.features.pregunta.model.OpcionRespuesta;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +50,14 @@ class CompletarCuestionarioIntegrationTest {
 
     @Autowired
     private CuestionarioDAO cuestionarioDAO;
+
+    /** Busca un cuestionario del seed por su clave (los ids dependen del orden de carga del seed). */
+    private Cuestionario porClave(String clave) {
+        return cuestionarioDAO.findAll().stream()
+                .filter(c -> clave.equals(c.getClaveAcceso()))
+                .findFirst()
+                .orElseThrow();
+    }
 
     /** Elige la opción de mayor texto alfabético "SIEMPRE"/"UN PARADIGMA..." no importa: toma la primera. */
     private static List<RespuestaBloqueDTO> responderPrimeraOpcion(CuestionarioWizardDTO paso) {
@@ -125,6 +136,8 @@ class CompletarCuestionarioIntegrationTest {
     @DisplayName("Flujo completo: responde los 2 bloques, calcula resultados y pasa a COMPLETO")
     void flujoCompletoConResultados() {
         CuestionarioWizardDTO paso1 = gestor.iniciarOReanudarCuestionario(SUAREZ_ACTIVO);
+        // Las preguntas se eligen al azar: el puntaje esperado se calcula con las que tocaron
+        double esperado = puntajeConMejoresOpciones(paso1.cuestionarioId());
 
         // 8.A: hay más bloques
         CuestionarioWizardDTO paso2 = gestor.responderBloque(SUAREZ_ACTIVO, paso1.cuestionarioId(), 1,
@@ -147,11 +160,9 @@ class CompletarCuestionarioIntegrationTest {
 
         Cuestionario c = cuestionarioDAO.findById(paso1.cuestionarioId()).orElseThrow();
         assertThat(c.getFechaFinalizacion()).isNotNull();
-        // Opciones con mayor ponderación: TEC (10+10)/2 = 10, COMUNICACIÓN (7+7)/2 = 7 -> promedio 8.5
-        assertThat(c.getResultado().getPuntajeObtenido()).isEqualTo(8.5);
-        assertThat(c.getResultado().getResultadosCompetencia())
-                .extracting(ResultadoCompetencia::getTotalCompetencia)
-                .containsExactlyInAnyOrder(10.0, 7.0);
+        // Obs. 3 del CU 026: factor = suma / 2, competencia = promedio de factores, total = promedio
+        assertThat(c.getResultado().getPuntajeObtenido()).isEqualTo(esperado);
+        assertThat(c.getResultado().getResultadosCompetencia()).hasSize(2);
         assertThat(c.getResultado().fueAprobado()).isTrue();
     }
 
@@ -242,8 +253,8 @@ class CompletarCuestionarioIntegrationTest {
     void vencidosDelSeedCerrados() {
         assertThat(cuestionarioDAO.obtenerActivoOEnProceso(MEDINA_INCOMPLETO)).isEmpty();
         assertThat(cuestionarioDAO.obtenerActivoOEnProceso(HERRERA_SIN_CONTESTAR)).isEmpty();
-        assertThat(cuestionarioDAO.findById(13L).orElseThrow().getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
-        assertThat(cuestionarioDAO.findById(10L).orElseThrow().getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
+        assertThat(porClave("Medina17").getEstado()).isEqualTo(EstadoCuestionario.INCOMPLETO);
+        assertThat(porClave("Herrer18").getEstado()).isEqualTo(EstadoCuestionario.SIN_CONTESTAR);
 
         assertThatThrownBy(() -> gestor.iniciarOReanudarCuestionario(MEDINA_INCOMPLETO))
                 .isInstanceOf(RecursoNoEncontradoException.class);
@@ -252,7 +263,7 @@ class CompletarCuestionarioIntegrationTest {
     @Test
     @DisplayName("fueAprobado: una competencia del puesto sin resultado cuenta como no aprobada")
     void noApruebaSinTodasLasCompetencias() {
-        Cuestionario sosa = cuestionarioDAO.findById(4L).orElseThrow();
+        Cuestionario sosa = porClave("Sosa0009");
         assertThat(sosa.getResultado().fueAprobado()).isTrue();
 
         // Se quita la competencia COMUNICACIÓN: la de TEC sigue superando el mínimo
@@ -283,34 +294,47 @@ class CompletarCuestionarioIntegrationTest {
     @Test
     @DisplayName("Datos del seed para el CU 028: resultados ya calculados")
     void resultadosDelSeed() {
-        Cuestionario sosa = cuestionarioDAO.findById(4L).orElseThrow();
+        // Totales con las ponderaciones actuales del seed (TEC 7/3, COMUNICACIÓN 0/3/7)
+        Cuestionario sosa = porClave("Sosa0009");
         assertThat(sosa.getEstado()).isEqualTo(EstadoCuestionario.COMPLETO);
-        assertThat(sosa.getResultado().getPuntajeObtenido()).isEqualTo(8.5);
+        assertThat(sosa.getResultado().getPuntajeObtenido()).isEqualTo(7.0);
         assertThat(sosa.getResultado().fueAprobado()).isTrue();
 
-        Cuestionario acosta = cuestionarioDAO.findById(6L).orElseThrow();
-        assertThat(acosta.getResultado().getPuntajeObtenido()).isEqualTo(6.75);
+        Cuestionario acosta = porClave("Acos0011");
+        assertThat(acosta.getResultado().getPuntajeObtenido()).isEqualTo(5.25);
         assertThat(acosta.getResultado().fueAprobado()).isFalse();
     }
 
-    /** Para cada pregunta elige la opción con mayor ponderación (la última, según el seed). */
+    /** Para cada pregunta del bloque elige la opción con mayor ponderación. */
     private List<RespuestaBloqueDTO> respuestasMaximas(CuestionarioWizardDTO paso) {
+        Map<Long, OpcionRespuesta> mejores = new HashMap<>();
+        asignadas(paso.cuestionarioId()).forEach(pa -> mejores.put(pa.getId(), mejorOpcion(pa)));
         return paso.preguntas().stream()
-                .map(p -> new RespuestaBloqueDTO(p.preguntaAsignadaId(), mejorOpcion(p)))
+                .map(p -> new RespuestaBloqueDTO(p.preguntaAsignadaId(), mejores.get(p.preguntaAsignadaId()).getId()))
                 .toList();
     }
 
-    /**
-     * En el seed: preguntas 1 y 2 -> la primera opción vale 10; preguntas 3 y 4 -> "SIEMPRE"
-     * (la última) vale 7.
-     */
-    private Long mejorOpcion(PreguntaCuestionarioDTO p) {
-        List<OpcionCuestionarioDTO> opciones = p.opciones();
-        return opciones.stream()
-                .filter(o -> o.descripcion().equals("SIEMPRE") || o.descripcion().startsWith("UN PARADIGMA")
-                        || o.descripcion().startsWith("GARANTIZA"))
-                .findFirst()
-                .orElse(opciones.stream().max(Comparator.comparing(OpcionCuestionarioDTO::id)).orElseThrow())
-                .id();
+    private List<PreguntaAsignada> asignadas(Long cuestionarioId) {
+        return cuestionarioDAO.findById(cuestionarioId).orElseThrow().getBloques().stream()
+                .flatMap(b -> b.getPreguntas().stream())
+                .toList();
+    }
+
+    private static OpcionRespuesta mejorOpcion(PreguntaAsignada pa) {
+        return pa.getPregunta().getOpciones().stream()
+                .max(Comparator.comparing(OpcionRespuesta::getPonderacion))
+                .orElseThrow();
+    }
+
+    /** Puntaje total si se elige la mejor opción en todas las preguntas asignadas (obs. 3 del CU 026). */
+    private double puntajeConMejoresOpciones(Long cuestionarioId) {
+        Map<Long, Map<Long, Double>> sumaPorFactorDeCompetencia = new HashMap<>();
+        asignadas(cuestionarioId).forEach(pa -> sumaPorFactorDeCompetencia
+                .computeIfAbsent(pa.getPregunta().getFactor().getCompetencia().getId(), k -> new HashMap<>())
+                .merge(pa.getPregunta().getFactor().getId(), mejorOpcion(pa).getPonderacion(), Double::sum));
+        return sumaPorFactorDeCompetencia.values().stream()
+                .mapToDouble(factores -> factores.values().stream().mapToDouble(suma -> suma / 2).average().orElseThrow())
+                .average()
+                .orElseThrow();
     }
 }
