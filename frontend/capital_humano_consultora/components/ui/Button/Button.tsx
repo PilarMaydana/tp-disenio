@@ -33,30 +33,30 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-medium transition-all duration-200 cursor-pointer focus:outline-none select-none disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
 
     const sizeStyles: Record<ButtonSize, string> = {
-      sm: 'text-sm py-1.5 px-3 rounded-md gap-1.5',
-      md: 'text-base py-2.5 px-6 rounded-lg gap-2',
-      lg: 'text-lg py-3 px-8 rounded-xl gap-3 font-semibold',
+      sm: 'text-sm h-10 px-4 min-w-[110px] rounded-lg gap-1.5 whitespace-nowrap',
+      md: 'text-base h-[46px] px-5 min-w-[120px] sm:min-w-[150px] rounded-lg gap-2 whitespace-nowrap',
+      lg: 'text-lg h-12 px-8 rounded-xl gap-3 font-semibold whitespace-nowrap',
     };
 
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        'bg-[#3F2581] hover:bg-[#4E309D] active:bg-[#341E6C] text-white shadow-sm hover:shadow-md border border-transparent',
+        'bg-[#3F2581] hover:bg-[#4E309D] active:bg-[#341E6C] text-white shadow-sm hover:shadow-md border-2 border-transparent',
       secondary:
-        'bg-[#D8D8D8] hover:bg-[#C0C0C0] active:bg-[#B0B0B0] text-[#000000] border border-[#CCCCCC]',
+        'bg-transparent hover:bg-[#F4F0FF] active:bg-[#EADDFF] text-[#3F2581] border-2 border-[#3F2581]',
       'secondary-soft':
-        'bg-[#CDCEE6] hover:bg-[#B8B9DA] active:bg-[#A6A8CD] text-[#2D1B60] border border-[#BDBEE0]',
+        'bg-[#CDCEE6] hover:bg-[#B8B9DA] active:bg-[#A6A8CD] text-[#2D1B60] border-2 border-[#BDBEE0]',
       icon:
         'p-2.5 rounded-lg bg-transparent hover:bg-white/10 active:bg-white/20 text-white border border-white/20',
       outline:
-        'bg-transparent hover:bg-[#F4F0FF] text-[#3F2581] border-2 border-[#3F2581]',
+        'bg-transparent hover:bg-[#F4F0FF] active:bg-[#EADDFF] text-[#3F2581] border-2 border-[#3F2581]',
       danger:
-        'bg-[#D32F2F] hover:bg-[#B71C1C] active:bg-[#9A0007] text-white',
+        'bg-[#D32F2F] hover:bg-[#B71C1C] active:bg-[#9A0007] text-white border-2 border-transparent',
     };
 
     return (
       <button
         ref={ref}
-        className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+        className={`${baseStyles} ${variant === 'icon' ? '' : sizeStyles[size]} ${variantStyles[variant]} ${className}`}
         disabled={disabled || isLoading}
         {...props}
       >

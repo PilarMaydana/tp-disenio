@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { Stepper } from '@/components/molecules/Stepper';
 import { SearchFilterBar } from '@/components/molecules/SearchFilterBar';
 import { NotchedField } from '@/components/molecules/NotchedField';
@@ -64,7 +66,12 @@ const EvaluarCandidatos: React.FC<{ onFinalizar: () => void }> = ({ onFinalizar 
   const cu = useEvaluarCandidatos();
   const mostrarErrorGeneral = useAutoDismissError(cu.errorGeneral, () => cu.setErrorGeneral(null));
   const finalizarCU = () => {
-    window.scrollTo({ top: 0 });
+    const mainScroll = document.getElementById('dashboard-main-scroll');
+    if (mainScroll) {
+      mainScroll.scrollTo({ top: 0 });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
     onFinalizar();
   };
 
@@ -104,6 +111,12 @@ const EvaluarCandidatos: React.FC<{ onFinalizar: () => void }> = ({ onFinalizar 
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto">
+      <nav aria-label="Migas de pan" className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium">
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span className="font-semibold text-[#3F2581]">Evaluaciones</span>
+      </nav>
+
       <div className="flex flex-col">
         <h1 className="text-2xl md:text-3xl font-bold text-[#3F2581]">Evaluar Candidatos</h1>
         <p className="text-sm text-[#757575] mt-1">
@@ -133,10 +146,11 @@ const EvaluarCandidatos: React.FC<{ onFinalizar: () => void }> = ({ onFinalizar 
       {cu.paso === 0 && (
         <div className="flex flex-col gap-6">
           <SearchFilterBar
+            gridClassName="grid-cols-1 sm:grid-cols-2 md:grid-cols-[minmax(0,2.2fr)_minmax(0,2.2fr)_minmax(140px,1fr)]"
             fields={[
               { key: 'apellido', label: 'Apellido', placeholder: 'Ej: Romero' },
               { key: 'nombre', label: 'Nombre', placeholder: 'Ej: Agustín' },
-              { key: 'nroCandidato', label: 'Nro. Candidato', placeholder: 'Ej: 4' },
+              { key: 'nroCandidato', label: 'Nro. Candidato', placeholder: 'Ej: 4', className: 'sm:col-span-2 md:col-span-1' },
             ]}
             onSearch={(f) => cu.buscarCandidatos({ apellido: f.apellido, nombre: f.nombre, nroCandidato: f.nroCandidato })}
           />

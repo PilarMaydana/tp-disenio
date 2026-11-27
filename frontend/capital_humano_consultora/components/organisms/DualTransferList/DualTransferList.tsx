@@ -242,7 +242,7 @@ export const DualTransferList: React.FC<DualTransferListProps> = ({
         <div className="pt-4 border-t border-[#D0BCFF]/60 mt-3 flex justify-end">
           <Button
             type="button"
-            variant="secondary-soft"
+            variant="primary"
             onClick={handleAdd}
             disabled={checkedAvailableIds.length === 0}
             leftIcon="plus"
