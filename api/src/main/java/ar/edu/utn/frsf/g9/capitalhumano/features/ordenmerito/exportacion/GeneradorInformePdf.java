@@ -148,13 +148,6 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             }
         }
 
-        private void agregarTextoCentrado(String texto, float tamanio, boolean negrita) throws IOException {
-            PDType1Font fuente = negrita ? NEGRITA : NORMAL;
-            float ancho = fuente.getStringWidth(pdfSafe(texto)) / 1000 * tamanio;
-            texto(texto, (ANCHO_PAGINA - ancho) / 2, y, tamanio, negrita);
-            y -= tamanio + 9;
-        }
-
         private void agregarPortada() throws IOException {
             // Franja institucional de la carátula.
             contenido.setNonStrokingColor(new Color(63, 37, 129));
@@ -166,8 +159,8 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
 
             y = ALTO_PAGINA - 177;
             agregarTexto("PUESTO", 9, true);
-            agregarTexto(texto(informe.codigoPuesto()) + "  |  " + texto(informe.nombrePuesto()), 16, true);
-            agregarTexto("Empresa: " + texto(informe.empresa()), 11, false);
+            agregarTexto(GeneradorInformePdf.texto(informe.codigoPuesto()) + "  |  " + GeneradorInformePdf.texto(informe.nombrePuesto()), 16, true);
+            agregarTexto("Empresa: " + GeneradorInformePdf.texto(informe.empresa()), 11, false);
             if (informe.descripcionPuesto() != null && !informe.descripcionPuesto().isBlank()) {
                 y -= 3;
                 agregarTexto("Descripción", 9, true);
@@ -213,8 +206,8 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             int cantidadVisible = Math.min(informe.evaluaciones().size(), 5);
             for (int i = 0; i < cantidadVisible; i++) {
                 EvaluacionOrdenMeritoDTO evaluacion = informe.evaluaciones().get(i);
-                agregarTexto("-  " + texto(evaluacion.proyecto()) + "  |  " + texto(evaluacion.fecha())
-                        + "  |  " + texto(evaluacion.estado()), 8, false);
+                agregarTexto("-  " + GeneradorInformePdf.texto(evaluacion.proyecto()) + "  |  " + GeneradorInformePdf.texto(evaluacion.fecha())
+                        + "  |  " + GeneradorInformePdf.texto(evaluacion.estado()), 8, false);
             }
             if (informe.evaluaciones().size() > cantidadVisible) {
                 agregarTexto("Y " + (informe.evaluaciones().size() - cantidadVisible)

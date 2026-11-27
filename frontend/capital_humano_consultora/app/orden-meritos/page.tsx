@@ -106,16 +106,6 @@ function OrdenMeritosContent() {
     (!filtroEstadoEvaluacion || evaluacion.estado === filtroEstadoEvaluacion)
   );
 
-  async function cargarEmpresas() {
-    setError('');
-    if (empresas.length > 0) return;
-    try {
-      setEmpresas(await ordenMeritoService.listarEmpresas());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudieron cargar las empresas.');
-    }
-  }
-
   async function buscar(event: React.FormEvent) {
     event.preventDefault();
     if (!filtros.codigo.trim() && !filtros.nombrePuesto.trim() && !filtros.empresaId) {
