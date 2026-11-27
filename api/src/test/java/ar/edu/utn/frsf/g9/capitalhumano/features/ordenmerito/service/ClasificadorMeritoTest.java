@@ -41,6 +41,7 @@ class ClasificadorMeritoTest {
         assertEquals("APTO", resultado.estadoMerito());
         assertEquals(8.0, resultado.puntajeObtenido());
         assertTrue(resultado.cumpleMinimos());
+        assertTrue(resultado.minimosNoAlcanzados().isEmpty());
     }
 
     @Test
@@ -50,6 +51,21 @@ class ClasificadorMeritoTest {
 
         assertEquals("NO_ALCANZA_MINIMOS", resultado.estadoMerito());
         assertFalse(resultado.cumpleMinimos());
+        assertEquals(List.of(new CandidatoOrdenMeritoDTO.IncumplimientoMinimoDTO("Técnica", 5.99, 6.0)),
+                resultado.minimosNoAlcanzados());
+    }
+
+    @Test
+    void informaCadaCompetenciaDebajoDelMinimo() {
+        Competencia comunicacion = new Competencia(8L, "COM", "Comunicación", "Comunicación efectiva");
+        puesto.addCaracteristica(new CaracteristicaPuesto(2L, puesto, comunicacion, 7.0));
+        CandidatoOrdenMeritoDTO resultado = clasificador.clasificar(
+                List.of(cuestionario(1L, EstadoCuestionario.COMPLETO)), puesto,
+                Map.of(1L, Map.of(COMPETENCIA_ID, 5.0, 8L, 8.0))).getFirst();
+
+        assertEquals("NO_ALCANZA_MINIMOS", resultado.estadoMerito());
+        assertEquals(List.of(new CandidatoOrdenMeritoDTO.IncumplimientoMinimoDTO("Técnica", 5.0, 6.0)),
+                resultado.minimosNoAlcanzados());
     }
 
     @Test
