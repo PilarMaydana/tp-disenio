@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useMemo, useState } from 'react';
 import { Stepper } from '@/components/molecules/Stepper';
 import { SearchFilterBar } from '@/components/molecules/SearchFilterBar';
 import { NotchedField } from '@/components/molecules/NotchedField';
@@ -11,7 +10,6 @@ import { DataTable, Column } from '@/components/organisms/DataTable';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Icon } from '@/components/ui/Icon';
-import { ROUTES } from '@/constants/routes';
 import { useEvaluarCandidatos } from '../hooks/useEvaluarCandidatos';
 import { CandidatoBusqueda, CandidatoClave } from '../types';
 import { ModalMensaje } from './ModalMensaje';
@@ -55,10 +53,20 @@ const COLUMNAS: Column<CandidatoClave>[] = [
  * Paso 3: Candidatos a evaluar con sus claves (pasos 11 a 17).
  */
 export const EvaluarCandidatosScreen: React.FC = () => {
-  const router = useRouter();
+  // Cada vez que el CU finaliza (exportó, no exportó, 9.A o Cancelar) se vuelve a montar la
+  // pantalla desde el paso 1, con todos los datos limpios: el consultor permanece en el módulo
+  // de evaluaciones en lugar de ser redirigido a la pantalla principal (Alta de Puesto).
+  const [ejecucion, setEjecucion] = useState(0);
+  return <EvaluarCandidatos key={ejecucion} onFinalizar={() => setEjecucion((n) => n + 1)} />;
+};
+
+const EvaluarCandidatos: React.FC<{ onFinalizar: () => void }> = ({ onFinalizar }) => {
   const cu = useEvaluarCandidatos();
   const mostrarErrorGeneral = useAutoDismissError(cu.errorGeneral, () => cu.setErrorGeneral(null));
-  const irAPantallaPrincipal = () => router.push(ROUTES.HOME);
+  const finalizarCU = () => {
+    window.scrollTo({ top: 0 });
+    onFinalizar();
+  };
 
   // Mapa nroCandidato -> candidato, para recuperar los datos desde la lista de transferencia
   const porNro = useMemo(() => {
@@ -84,14 +92,14 @@ export const EvaluarCandidatosScreen: React.FC = () => {
     }
     cu.cerrarModal();
     if (accion === 'finalizar-cu') {
-      irAPantallaPrincipal();
+      finalizarCU();
     }
   };
 
   const alRechazarModal = () => {
     // 14.A - No exportar: el CU finaliza
     cu.cerrarModal();
-    irAPantallaPrincipal();
+    finalizarCU();
   };
 
   return (
@@ -216,7 +224,7 @@ export const EvaluarCandidatosScreen: React.FC = () => {
       {!cu.evaluacion && (
         <ActionToolbar align="between">
           {cu.paso === 0 ? (
-            <Button type="button" variant="secondary" onClick={irAPantallaPrincipal}>
+            <Button type="button" variant="secondary" onClick={finalizarCU}>
               Cancelar
             </Button>
           ) : (
@@ -228,7 +236,7 @@ export const EvaluarCandidatosScreen: React.FC = () => {
           <div className="flex gap-3">
             {cu.paso === 2 && (
               // 12.A - Cancelar: vuelve a la pantalla principal sin guardar
-              <Button type="button" variant="secondary" onClick={irAPantallaPrincipal} disabled={cu.cargando}>
+              <Button type="button" variant="secondary" onClick={finalizarCU} disabled={cu.cargando}>
                 Cancelar
               </Button>
             )}
