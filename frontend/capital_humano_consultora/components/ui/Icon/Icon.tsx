@@ -3,6 +3,7 @@
 import React from 'react';
 import {
   Menu,
+  Home,
   Users,
   User,
   Bell,
@@ -44,6 +45,7 @@ import {
 
 export type IconName =
   | 'menu'
+  | 'home'
   | 'groups'
   | 'person'
   | 'notifications'
@@ -91,6 +93,7 @@ interface IconProps extends Omit<LucideProps, 'ref'> {
 
 const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   menu: Menu,
+  home: Home,
   groups: Users,
   person: User,
   notifications: Bell,

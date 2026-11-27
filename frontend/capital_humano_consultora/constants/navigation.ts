@@ -32,6 +32,14 @@ export const NAV_ITEMS: NavItem[] = [
   // Rutas Consultor
   {
     type: 'link',
+    label: 'Inicio',
+    href: ROUTES.CONSULTOR.INICIO,
+    icon: 'home',
+    enabled: true,
+    roles: ['CONSULTOR'],
+  },
+  {
+    type: 'link',
     label: 'Puestos',
     href: ROUTES.CONSULTOR.PUESTOS_NUEVO,
     icon: 'work',
@@ -84,14 +92,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Orden de Méritos',
     href: ROUTES.CONSULTOR.ORDEN_MERITOS,
     icon: 'format_list_numbered',
-    enabled: true,
-    roles: ['CONSULTOR'],
-  },
-  {
-    type: 'link',
-    label: 'Reportes',
-    href: ROUTES.CONSULTOR.REPORTES,
-    icon: 'bar_chart',
     enabled: true,
     roles: ['CONSULTOR'],
   },

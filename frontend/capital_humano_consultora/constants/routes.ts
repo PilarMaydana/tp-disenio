@@ -8,11 +8,11 @@ export const ROUTES = {
     LOGIN: '/',
   },
   CONSULTOR: {
+    INICIO: '/inicio',
     EVALUACIONES: '/evaluaciones/evaluar',
     COMPETENCIAS: '/competencias',
     COMPETENCIAS_NUEVO: '/competencias/nueva',
     COMPETENCIAS_NUEVA: '/competencias/nueva',
-    REPORTES: '/en-desarrollo?modulo=Reportes',
     PREGUNTAS: '/preguntas',
     PREGUNTAS_NUEVO: '/preguntas/nuevo',
     ORDEN_MERITOS: '/orden-meritos',

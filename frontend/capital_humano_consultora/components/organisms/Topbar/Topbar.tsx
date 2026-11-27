@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { UserProfileBadge } from '@/components/molecules/UserProfileBadge';
+import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
@@ -81,6 +83,8 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
     timeStyle: 'short',
   }).format(new Date(createdAt));
 
+  const hasUnreadNotifications = notifications.some((notification) => !notification.isRead);
+
   const confirmarSalida = () => {
     setLogoutConfirmationOpen(false);
     handleLogout();
@@ -88,7 +92,7 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
 
   return (
     <header
-      className={`bg-[#3B3B3B] text-white h-20 px-4 md:px-8 lg:px-12 flex items-center justify-between shadow-md select-none sticky top-0 z-20 w-full ${className}`}
+      className={`shrink-0 bg-[#3B3B3B] text-white h-20 px-4 md:px-8 lg:px-12 flex items-center justify-between shadow-md select-none relative z-20 w-full print:hidden ${className}`}
     >
       {/* Sección Izquierda: Menú Hamburguesa + Marca */}
       <div className="flex items-center gap-4 md:gap-6">
@@ -103,14 +107,28 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
           </button>
         )}
 
-        <div className="flex items-center gap-3">
-          <div className="text-white flex items-center">
-            <Icon name="groups" size={32} />
+        {isCandidato ? (
+          <div className="flex items-center gap-3">
+            <div className="text-white flex items-center">
+              <Icon name="groups" size={32} />
+            </div>
+            <span className="font-semibold text-base md:text-xl tracking-wider text-white">
+              CONSULTORA CAPIT@L HUMANO
+            </span>
           </div>
-          <span className="font-semibold text-base md:text-xl tracking-wider text-white">
-            CONSULTORA CAPIT@L HUMANO
-          </span>
-        </div>
+        ) : (
+          <Link
+            href={ROUTES.CONSULTOR.INICIO}
+            className="flex items-center gap-3 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          >
+            <div className="text-white flex items-center">
+              <Icon name="groups" size={32} />
+            </div>
+            <span className="font-semibold text-base md:text-xl tracking-wider text-white">
+              CONSULTORA CAPIT@L HUMANO
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* Sección Derecha: Usuario Consultor o Salir para Candidato */}
@@ -129,7 +147,7 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
               title="Notificaciones"
             >
               <Icon name="notifications" size={20} />
-              {notifications.length > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#D32F2F]" />}
+              {hasUnreadNotifications && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#D32F2F]" />}
             </button>
 
             {notificationsOpen && <section id="panel-notificaciones" aria-label="Panel de notificaciones" className="absolute right-0 z-50 mt-3 w-[min(90vw,24rem)] overflow-hidden rounded-xl border border-[#E3DFE9] bg-white text-[#24212A] shadow-xl">
@@ -170,8 +188,8 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
           <h2 id="confirmar-salida-titulo" className="text-lg font-semibold">¿Querés salir del sistema?</h2>
           <p className="mt-2 text-sm text-[#6E6973]">Se cerrará tu sesión actual.</p>
           <div className="mt-6 flex justify-center gap-3">
-            <button type="button" onClick={() => setLogoutConfirmationOpen(false)} className="min-w-24 rounded-lg border border-[#D4CCDF] px-5 py-2 text-sm font-semibold text-[#51377F] hover:bg-[#F6F3FA]">No</button>
-            <button type="button" onClick={confirmarSalida} className="min-w-24 rounded-lg bg-[#51377F] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3F2B68]">Sí</button>
+            <Button type="button" variant="secondary" onClick={() => setLogoutConfirmationOpen(false)}>No</Button>
+            <Button type="button" variant="primary" onClick={confirmarSalida}>Sí</Button>
           </div>
         </section>
       </div>}
