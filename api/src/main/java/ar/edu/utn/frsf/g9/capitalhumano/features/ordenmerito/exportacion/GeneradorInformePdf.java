@@ -38,9 +38,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
         try (PDDocument documento = new PDDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
             PdfBuilder pdf = new PdfBuilder(documento, informe);
             pdf.nuevaPagina(true);
-            pdf.agregarTextoCentrado("ORDEN DE MÉRITO", 17, true);
-            pdf.agregarTextoCentrado("Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()), 12, true);
-            pdf.agregarTextoCentrado("Empresa: " + texto(informe.empresa()), 11, false);
+            pdf.agregarPortada();
 
             pdf.nuevaPagina(false);
             pdf.agregarTexto("Generado: " + FECHA_HORA.format(informe.fechaGeneracion()), 9, false);
@@ -150,11 +148,87 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             }
         }
 
-        private void agregarTextoCentrado(String texto, float tamanio, boolean negrita) throws IOException {
-            PDType1Font fuente = negrita ? NEGRITA : NORMAL;
-            float ancho = fuente.getStringWidth(pdfSafe(texto)) / 1000 * tamanio;
-            texto(texto, (ANCHO_PAGINA - ancho) / 2, y, tamanio, negrita);
-            y -= tamanio + 9;
+        private void agregarPortada() throws IOException {
+            // Franja institucional de la carátula.
+            contenido.setNonStrokingColor(new Color(63, 37, 129));
+            contenido.addRect(0, ALTO_PAGINA - 150, ANCHO_PAGINA, 150);
+            contenido.fill();
+            textoColor("INFORME DE SELECCIÓN", ALTO_PAGINA - 48, 10, true);
+            textoColor("ORDEN DE MÉRITO", ALTO_PAGINA - 82, 25, true);
+            textoColor("Resultado de evaluación de candidatos", ALTO_PAGINA - 107, 11, false);
+
+            y = ALTO_PAGINA - 177;
+            agregarTexto("PUESTO", 9, true);
+            agregarTexto(GeneradorInformePdf.texto(informe.codigoPuesto()) + "  |  " + GeneradorInformePdf.texto(informe.nombrePuesto()), 16, true);
+            agregarTexto("Empresa: " + GeneradorInformePdf.texto(informe.empresa()), 11, false);
+            if (informe.descripcionPuesto() != null && !informe.descripcionPuesto().isBlank()) {
+                y -= 3;
+                agregarTexto("Descripción", 9, true);
+                String[] descripcion = envolver(informe.descripcionPuesto(), ANCHO_TABLA, 9);
+                int lineasVisibles = Math.min(descripcion.length, 3);
+                int numeroLinea = 0;
+                for (String textoLinea : descripcion) {
+                    if (numeroLinea >= lineasVisibles) break;
+                    String linea = textoLinea;
+                    if (numeroLinea == lineasVisibles - 1 && descripcion.length > lineasVisibles) linea += "...";
+                    agregarTexto(linea, 9, false);
+                    numeroLinea++;
+                }
+            }
+
+            y -= 7;
+            float x = MARGEN;
+            float anchoTarjeta = (ANCHO_TABLA - 18) / 4;
+            String[] resumen = {
+                    "FECHA DE EMISIÓN\n" + FECHA_HORA.format(informe.fechaGeneracion()),
+                    "EVALUACIONES\n" + informe.evaluaciones().size(),
+                    "CANDIDATOS APTOS\n" + contar("APTO"),
+                    "CANDIDATOS EVALUADOS\n" + informe.candidatos().size()
+            };
+            for (String tarjeta : resumen) {
+                contenido.setNonStrokingColor(new Color(246, 243, 250));
+                contenido.addRect(x, y - 38, anchoTarjeta, 38);
+                contenido.fill();
+                contenido.setStrokingColor(new Color(208, 188, 255));
+                contenido.addRect(x, y - 38, anchoTarjeta, 38);
+                contenido.stroke();
+                String[] lineas = tarjeta.split("\\n");
+                texto(lineas[0], x + 8, y - 14, 7, true);
+                texto(lineas[1], x + 8, y - 29, 10, true);
+                x += anchoTarjeta + 6;
+            }
+            y -= 56;
+            agregarTexto("ESTADO DE LOS CANDIDATOS", 9, true);
+            agregarTexto("Aptos: " + contar("APTO")
+                    + "   |   No alcanzan los mínimos: " + contar("NO_ALCANZA_MINIMOS")
+                    + "   |   Puntaje pendiente: " + contar("PENDIENTE_PUNTAJE")
+                    + "   |   Cuestionarios incompletos: " + contar("CUESTIONARIO_INCOMPLETO"), 9, false);
+
+            y -= 4;
+            agregarTexto("EVALUACIONES INCLUIDAS", 9, true);
+            int cantidadVisible = Math.min(informe.evaluaciones().size(), 5);
+            for (int i = 0; i < cantidadVisible; i++) {
+                EvaluacionOrdenMeritoDTO evaluacion = informe.evaluaciones().get(i);
+                agregarTexto("-  " + GeneradorInformePdf.texto(evaluacion.proyecto()) + "  |  " + GeneradorInformePdf.texto(evaluacion.fecha())
+                        + "  |  " + GeneradorInformePdf.texto(evaluacion.estado()), 8, false);
+            }
+            if (informe.evaluaciones().size() > cantidadVisible) {
+                agregarTexto("Y " + (informe.evaluaciones().size() - cantidadVisible)
+                        + " evaluación(es) más, detalladas en las páginas siguientes.", 8, false);
+            }
+        }
+
+        private long contar(String estado) {
+            return informe.candidatos().stream().filter(c -> estado.equals(c.estadoMerito())).count();
+        }
+
+        private void textoColor(String valor, float baseline, float tamanio, boolean negrita) throws IOException {
+            contenido.setNonStrokingColor(Color.WHITE);
+            contenido.beginText();
+            contenido.setFont(negrita ? NEGRITA : NORMAL, tamanio);
+            contenido.newLineAtOffset(MARGEN + 8, baseline);
+            contenido.showText(pdfSafe(valor));
+            contenido.endText();
         }
 
         private void agregarTexto(String texto, float tamanio, boolean negrita) throws IOException {
@@ -182,7 +256,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
             }
             float[] anchos = new float[pesos.length];
             for (int i = 0; i < pesos.length; i++) anchos[i] = ANCHO_TABLA * pesos[i];
-            dibujarFila(encabezados, anchos, true);
+            dibujarFila(encabezados, anchos);
             for (String[] fila : filas) {
                 List<String[]> lineas = new ArrayList<>();
                 int maxLineas = 1;
@@ -196,14 +270,14 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
                     nuevaPagina(false);
                     texto(titulo + " (continuación)", MARGEN, y, 10, true);
                     y -= 16;
-                    dibujarFila(encabezados, anchos, true);
+                    dibujarFila(encabezados, anchos);
                 }
                 dibujarFila(lineas, anchos, alto);
             }
             y -= 10;
         }
 
-        private void dibujarFila(String[] valores, float[] anchos, boolean encabezado) throws IOException {
+        private void dibujarFila(String[] valores, float[] anchos) throws IOException {
             List<String[]> lineas = new ArrayList<>();
             int maxLineas = 1;
             for (int i = 0; i < valores.length; i++) {
@@ -211,7 +285,7 @@ public class GeneradorInformePdf implements GeneradorInformeOrdenMerito {
                 lineas.add(envueltas);
                 maxLineas = Math.max(maxLineas, envueltas.length);
             }
-            dibujarFila(lineas, anchos, maxLineas * 9 + 7, encabezado);
+            dibujarFila(lineas, anchos, maxLineas * 9 + 7, true);
         }
 
         private void dibujarFila(List<String[]> lineas, float[] anchos, float alto) throws IOException {

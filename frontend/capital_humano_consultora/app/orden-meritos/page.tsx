@@ -106,16 +106,6 @@ function OrdenMeritosContent() {
     (!filtroEstadoEvaluacion || evaluacion.estado === filtroEstadoEvaluacion)
   );
 
-  async function cargarEmpresas() {
-    setError('');
-    if (empresas.length > 0) return;
-    try {
-      setEmpresas(await ordenMeritoService.listarEmpresas());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudieron cargar las empresas.');
-    }
-  }
-
   async function buscar(event: React.FormEvent) {
     event.preventDefault();
     if (!filtros.codigo.trim() && !filtros.nombrePuesto.trim() && !filtros.empresaId) {
@@ -266,11 +256,19 @@ function OrdenMeritosContent() {
   const candidatosPendientes = candidatos.filter((c) => c.estado === 'pendiente');
   const evaluacionesDelReporte = evaluaciones.filter((e) => evaluacionesSeleccionadas.includes(e.id));
 
-  return <div className={`orden-merito-report mx-auto w-full max-w-7xl space-y-6 ${reporteVisible ? 'print:max-w-none print:space-y-3 print:text-black' : ''}`}>
-    <header className="border-b-4 border-[#E4E1E8] pb-3 text-center"><h1 className="text-2xl font-bold tracking-wide text-[#27232D] sm:text-3xl">ORDEN DE MÉRITOS</h1></header>
+  return <div className={`orden-merito-report mx-auto w-full ${reporteVisible ? 'max-w-7xl space-y-6 print:max-w-none print:space-y-3 print:text-black' : 'max-w-6xl space-y-4'}`}>
     {mostrarError && error && <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0"/><p className="flex-1">{error}</p><button type="button" onClick={() => setError('')} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 text-red-700 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700"><X size={16} aria-hidden="true"/></button></div>}
 
+    <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm font-medium text-[#757575] print:hidden">
+      <span>Orden de Méritos</span><span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span><span className="font-semibold text-[#3F2581]">{reporteVisible ? 'Orden generada' : puestoSeleccionado ? 'Seleccionar evaluaciones' : 'Buscar puestos'}</span>
+    </nav>
+
     {reporteVisible ? <>
+      <div className="flex flex-col gap-6 rounded-2xl border border-[#D0BCFF] bg-white p-6 shadow-xs sm:p-8 md:p-10 print:border-0 print:p-0 print:shadow-none">
+      <header className="flex flex-col border-b border-[#EADDFF]/60 pb-5 print:hidden">
+        <h1 className="text-2xl font-bold text-[#3F2581] md:text-3xl">Orden de Méritos</h1>
+        <p className="mt-1 text-sm text-[#757575]">Informe de candidatos para {puestoReporte?.nombrePuesto || 'el puesto seleccionado'}.</p>
+      </header>
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><button onClick={() => { setPuestoSeleccionado(puestoReporte); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a evaluaciones</button><p className="text-sm text-[#77717E]">{puestoReporte?.nombrePuesto || 'Puesto seleccionado'} · {evaluacionesSeleccionadas.length === evaluaciones.length ? 'Todas las evaluaciones' : `${evaluacionesSeleccionadas.length} evaluaciones`}</p></div><div className="flex items-center gap-2"><Button onClick={imprimirReporte} isLoading={exportando} aria-label="Imprimir orden de mérito"><Printer size={17} aria-hidden="true"/>Imprimir</Button><div className="relative"><button type="button" disabled={exportando} aria-label="Más opciones de descarga" aria-expanded={menuExportacionAbierto} onClick={() => setMenuExportacionAbierto((abierto) => !abierto)} className="rounded-lg border border-[#D4CCDF] bg-white p-2 text-[#51377F] hover:bg-[#F6F3FA] disabled:opacity-60"><MoreHorizontal size={20}/></button>{menuExportacionAbierto && <div className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-lg border border-[#E3DFE9] bg-white py-1 text-sm shadow-lg"><button type="button" onClick={() => descargarReporte('EXCEL')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileSpreadsheet size={18} aria-hidden="true" className="text-[#28744A]"/><span>Descargar planilla Excel</span></button><button type="button" onClick={() => descargarReporte('WORD')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F6F3FA]"><FileText size={18} aria-hidden="true" className="text-blue-700"/><span>Descargar documento Word</span></button></div>}</div></div></div>
       <div className="hidden text-center print:block"><h1 className="text-2xl font-bold">ORDEN DE MÉRITO</h1><p className="mt-2 text-sm">Puesto: {puestoReporte?.codigo} · {puestoReporte?.nombrePuesto}</p><p className="text-sm">Empresa: {empresaNombre(puestoReporte!)}</p><p className="text-xs">Evaluaciones incluidas: {evaluacionesDelReporte.map((e) => `${e.id} - ${e.proyecto} (${e.fecha})`).join('; ') || 'No hay información disponible'}</p></div>
       <section className={`${panelClass} overflow-hidden print:break-inside-avoid print:border-gray-300 print:shadow-none`}>
@@ -283,10 +281,16 @@ function OrdenMeritosContent() {
       </div>
       <section className={`${panelClass} p-5`}><h2 className="mb-3 text-lg font-semibold">Puntaje pendiente</h2><div className="grid gap-3 md:grid-cols-2">{candidatosPendientes.length ? candidatosPendientes.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E] md:col-span-2">No hay información disponible para esta sección.</p>}</div></section>
       <p className="text-xs text-[#77717E] print:hidden">Los candidatos se muestran según el estado real de su cuestionario. El puntaje aparecerá cuando el sistema persista las respuestas de evaluación.</p>
-    </> : puestoSeleccionado ? <>
-      <div><button onClick={() => { setPuestoSeleccionado(null); setEvaluacionesSeleccionadas([]); }} className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a resultados</button><p className="text-sm text-[#77717E]">Puesto: {puestoSeleccionado.nombrePuesto} · {empresaNombre(puestoSeleccionado)}</p><h2 className="mt-1 text-xl font-semibold">Seleccionar evaluaciones</h2></div>
+      </div>
+    </> : puestoSeleccionado ? <div className="flex flex-col gap-6 rounded-2xl border border-[#D0BCFF] bg-white p-6 shadow-xs sm:p-8 md:p-10">
+      <header className="flex flex-col border-b border-[#EADDFF]/60 pb-5">
+        <button onClick={() => { setPuestoSeleccionado(null); setEvaluacionesSeleccionadas([]); }} className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-[#63499A] hover:underline"><ArrowLeft size={16}/> Volver a resultados</button>
+        <p className="text-sm text-[#757575]">Puesto: {puestoSeleccionado.nombrePuesto} · {empresaNombre(puestoSeleccionado)}</p>
+        <h1 className="mt-1 text-2xl font-bold text-[#3F2581] md:text-3xl">Seleccionar evaluaciones</h1>
+        <p className="mt-1 text-sm text-[#757575]">Elegí una o más evaluaciones para generar el orden de mérito.</p>
+      </header>
       <section className={`${panelClass} overflow-hidden`}>
-        <div className="space-y-3 border-b border-[#E7E4EB] bg-[#FAF9FC] px-4 py-3">
+        <div className="space-y-3 border-b border-[#EADDFF]/80 bg-[#FBF9FE] px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm font-semibold">
             <input type="checkbox" className="h-5 w-5 shrink-0 accent-[#6749A3]" checked={evaluaciones.length > 0 && evaluacionesSeleccionadas.length === evaluaciones.length} onChange={(e) => setEvaluacionesSeleccionadas(e.target.checked ? evaluaciones.map((x) => x.id) : [])} />
@@ -298,7 +302,7 @@ function OrdenMeritosContent() {
               <ChevronDown size={16} className={`transition-transform ${filtrosEvaluacionAbiertos ? 'rotate-180' : ''}`}/>
             </button>
           </div>
-          {filtrosEvaluacionAbiertos && <div id="filtros-evaluacion" className="grid gap-3 rounded-lg border border-[#E3DFE9] bg-white p-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtrosEvaluacionAbiertos && <div id="filtros-evaluacion" className="grid gap-3 rounded-lg border border-[#EADDFF]/80 bg-white p-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1 text-xs font-semibold text-[#57515F]">
               Nombre
               <span className="relative block"><Search size={16} className="absolute left-3 top-2.5 text-[#77717E]"/><input value={filtroNombreEvaluacion} onChange={(e) => setFiltroNombreEvaluacion(e.target.value)} placeholder="Nombre del candidato" className={`${inputClass} py-2 pl-9`} /></span>
@@ -334,13 +338,20 @@ function OrdenMeritosContent() {
           </div>}
         </div>
         {evaluaciones.length ? evaluacionesFiltradas.length ? <div className="divide-y divide-[#ECE9EF]">{evaluacionesFiltradas.map((e, index) => <label key={e.id} className="grid cursor-pointer grid-cols-[28px_1fr_100px] items-center gap-3 px-4 py-4 hover:bg-[#FAF9FC] sm:grid-cols-[36px_1fr_130px_1fr_110px]"><input type="checkbox" className="h-5 w-5 shrink-0 accent-[#6749A3]" checked={evaluacionesSeleccionadas.includes(e.id)} onChange={(ev) => setEvaluacionesSeleccionadas((prev) => ev.target.checked ? [...prev, e.id] : prev.filter((id) => id !== e.id))}/><span className="font-semibold">{index + 1}<small className="block font-normal text-[#77717E] sm:hidden">{e.fecha}</small></span><span className="hidden text-sm text-[#625D67] sm:block">{e.fecha}</span><span className="hidden text-sm text-[#625D67] sm:block">{e.proyecto}</span><span className={`rounded-full px-2 py-1 text-center text-xs ${e.estado === 'Completada' ? 'bg-[#E4F6EA] text-[#257348]' : 'bg-[#FFF2D6] text-[#946000]'}`}>{e.estado}</span></label>)}</div> : <p className="px-5 py-10 text-center text-sm text-[#77717E]">No hay evaluaciones que coincidan con los filtros ingresados.</p> : <p className="px-5 py-10 text-center text-sm text-[#77717E]">Este puesto todavía no tiene cuestionarios asociados.</p>}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF9FC] px-4 py-3"><span className="text-sm text-[#625D67]">{evaluacionesSeleccionadas.length} evaluaciones seleccionadas</span><div className="flex gap-2"><Button variant="secondary" onClick={()=>{setPuestoSeleccionado(null);setEvaluacionesSeleccionadas([])}}>Cancelar</Button><Button onClick={abrirReporte} disabled={!evaluacionesSeleccionadas.length} rightIcon="arrow_forward">Generar orden</Button></div></div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EADDFF]/80 bg-[#FBF9FE] px-4 py-3"><span className="text-sm text-[#625D67]">{evaluacionesSeleccionadas.length} evaluaciones seleccionadas</span><div className="flex gap-2"><Button variant="secondary" onClick={()=>{setPuestoSeleccionado(null);setEvaluacionesSeleccionadas([])}}>Cancelar</Button><Button onClick={abrirReporte} disabled={!evaluacionesSeleccionadas.length} rightIcon="arrow_forward">Generar orden</Button></div></div>
       </section>
-    </> : <>
-      <form onSubmit={buscar} className={`${panelClass} p-5 sm:p-6`}><h2 className="mb-4 text-lg font-semibold">Buscar puestos</h2><div className="grid gap-4 md:grid-cols-3">{campoPuesto('codigo', 'Código del puesto', 'Ej. PUE-2026-101')}{campoPuesto('nombrePuesto', 'Nombre del puesto', 'Ej. Gerente, Analista...')}<label className="space-y-1.5 text-sm font-medium text-[#000000]">Empresa<span className="relative block"><select className={`${inputClass} appearance-none pr-9`} value={filtros.empresaId} onFocus={async()=>{setError('');if(!empresas.length)setEmpresas(await ordenMeritoService.listarEmpresas())}} onChange={e=>{setError('');setFiltros({...filtros,empresaId:e.target.value})}}><option value="">Seleccione una empresa</option>{empresas.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#77717E]"/></span></label></div><div className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={limpiar}>Limpiar</Button><Button type="submit" isLoading={buscando} leftIcon="search">Buscar</Button></div></form>
+    </div> : <div className="flex flex-col gap-6 rounded-2xl border border-[#D0BCFF] bg-white p-6 shadow-xs sm:p-8 md:p-10">
+      <header className="flex flex-col border-b border-[#EADDFF]/60 pb-5">
+        <h1 className="text-2xl font-bold text-[#3F2581] md:text-3xl">Orden de Méritos</h1>
+        <p className="mt-1 text-sm text-[#757575]">Buscá puestos y seleccioná las evaluaciones para generar el orden de mérito de sus candidatos.</p>
+      </header>
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#EADDFF]/80 bg-[#FBF9FE] p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-sm font-bold uppercase tracking-wider text-[#3F2581]">Criterios de búsqueda</h2><span className="text-xs text-[#757575]">Ingresá al menos un criterio para buscar puestos</span></div>
+      <form onSubmit={buscar}><div className="grid gap-4 md:grid-cols-3">{campoPuesto('codigo', 'Código del puesto', 'Ej. PUE-2026-101')}{campoPuesto('nombrePuesto', 'Nombre del puesto', 'Ej. Gerente, Analista...')}<label className="space-y-1.5 text-sm font-medium text-[#000000]">Empresa<span className="relative block"><select className={`${inputClass} appearance-none pr-9`} value={filtros.empresaId} onFocus={async()=>{setError('');if(!empresas.length)setEmpresas(await ordenMeritoService.listarEmpresas())}} onChange={e=>{setError('');setFiltros({...filtros,empresaId:e.target.value})}}><option value="">Seleccione una empresa</option>{empresas.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#77717E]"/></span></label></div><div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={limpiar}>Limpiar</Button><Button type="submit" isLoading={buscando} leftIcon="search">Buscar</Button></div></form>
+      </div>
       {busco ? <><div className="flex items-end justify-between"><div><p className="text-xs font-semibold uppercase tracking-wider text-[#77717E]">Módulo de convocatorias</p><h2 className="mt-1 text-xl font-semibold">Resultados de la búsqueda</h2><p className="mt-1 text-sm text-[#77717E]">{resultados.length} puestos encontrados</p></div></div>{resultados.length ? <div className="grid gap-4 md:grid-cols-2">{resultados.map((puesto)=><article key={puesto.id} className={`${panelClass} flex flex-col p-5`}><div className="flex items-center justify-between gap-3"><span className="rounded bg-[#F0EFF2] px-2.5 py-1 text-xs tracking-wider text-[#726C78]">{puesto.codigo}</span><span className="flex items-center gap-1.5 rounded-full bg-[#F6F5F8] px-2.5 py-1 text-xs text-[#625D67]"><Building2 size={13}/>{empresaNombre(puesto)}</span></div><h3 className="mt-4 text-lg font-semibold">{puesto.nombrePuesto}</h3><p className="mt-1 line-clamp-2 min-h-10 text-sm text-[#625D67]">{puesto.descripcion || 'Puesto disponible para evaluación de candidatos.'}</p><div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E7E4EB] pt-4"><div><p className="text-xs font-semibold uppercase text-[#625D67]">Evaluaciones completas</p><p className="mt-1 flex items-center gap-2"><CheckCircle2 size={16} className="text-[#5F5970]"/><strong>{String(puesto.evaluacionesCompletas).padStart(2,'0')}</strong><span className="text-xs text-[#625D67]">de {puesto.candidatos} cuestionarios</span></p></div><Button size="sm" onClick={async()=>{setError('');try{const lista=await ordenMeritoService.listarEvaluaciones(puesto.id);if(!lista.length){setError('Este puesto no posee evaluaciones asociadas.');return}reiniciarFiltrosEvaluacion();setEvaluaciones(lista);setPuestoSeleccionado(puesto);setEvaluacionesSeleccionadas([])}catch(e){setError(e instanceof Error?e.message:'No se pudieron cargar las evaluaciones.')}}} rightIcon="arrow_forward">Emitir orden de mérito</Button></div></article>)}</div> : <div className={`${panelClass} px-6 py-14 text-center`}><Search size={28} className="mx-auto mb-3 text-[#8872B4]"/><h3 className="font-semibold">No se encontraron puestos</h3><p className="mt-1 text-sm text-[#77717E]">Probá con otros criterios de búsqueda.</p></div>}</> : <div className={`${panelClass} px-6 py-12 text-center`}><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEE6FA] text-[#684DA0]"><Search size={24}/></div><h2 className="font-semibold">Buscá un puesto para emitir su orden de mérito</h2><p className="mx-auto mt-2 max-w-lg text-sm text-[#77717E]">Ingresá código, nombre o empresa. Luego podrás elegir una o todas las evaluaciones disponibles.</p></div>}
 
-    </>}
+      </div>}
   </div>;
 }
 
