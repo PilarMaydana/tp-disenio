@@ -40,6 +40,7 @@ public class GeneradorInformeExcel implements GeneradorInformeOrdenMerito {
             CellStyle encabezado = crearEstiloEncabezado(libro);
             CellStyle celda = crearEstiloCelda(libro);
 
+            crearHojaCaratula(libro, informe, crearEstiloCaratula(libro), crearEstiloDatoCaratula(libro), celda);
             crearHojaEvaluaciones(libro, informe, titulo, encabezado, celda);
             crearHojaCandidatos(libro, "Aptos", "Candidatos aptos", filtrar(informe.candidatos(), "APTO"),
                     true, informe, titulo, encabezado, celda);
@@ -77,6 +78,94 @@ public class GeneradorInformeExcel implements GeneradorInformeOrdenMerito {
         }
         configurarImpresion(hoja, columnas.length, indice);
         ajustarColumnas(hoja, columnas.length);
+    }
+
+    private void crearHojaCaratula(Workbook libro, InformeOrdenMeritoDTO informe, CellStyle titulo,
+                                   CellStyle dato, CellStyle celda) {
+        Sheet hoja = libro.createSheet("Carátula");
+        agregarCelda(hoja.createRow(0), 0, "INFORME DE SELECCIÓN · ORDEN DE MÉRITO", titulo);
+        hoja.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
+        Row bajada = hoja.createRow(1);
+        agregarCelda(bajada, 0, "Resultado de evaluación de candidatos", dato);
+        hoja.addMergedRegion(new CellRangeAddress(1, 1, 0, 4));
+
+        agregarDatoCaratula(hoja, 3, "Puesto", texto(informe.codigoPuesto()) + "  |  " + texto(informe.nombrePuesto()), dato);
+        agregarDatoCaratula(hoja, 4, "Empresa", texto(informe.empresa()), dato);
+        agregarDatoCaratula(hoja, 5, "Descripción", texto(informe.descripcionPuesto()), dato);
+        agregarDatoCaratula(hoja, 6, "Fecha de emisión", FECHA_HORA.format(informe.fechaGeneracion()), dato);
+
+        String[] etiquetas = {"Evaluaciones", "Candidatos evaluados", "Candidatos aptos", "No alcanzan mínimos", "Puntaje pendiente"};
+        String[] valores = {String.valueOf(informe.evaluaciones().size()), String.valueOf(informe.candidatos().size()),
+                String.valueOf(contar(informe, "APTO")), String.valueOf(contar(informe, "NO_ALCANZA_MINIMOS")),
+                String.valueOf(contar(informe, "PENDIENTE_PUNTAJE"))};
+        Row filaEtiquetas = hoja.createRow(8);
+        Row filaValores = hoja.createRow(9);
+        for (int i = 0; i < etiquetas.length; i++) {
+            agregarCelda(filaEtiquetas, i, etiquetas[i], titulo);
+            agregarCelda(filaValores, i, valores[i], dato);
+        }
+
+        Row seccion = hoja.createRow(11);
+        agregarCelda(seccion, 0, "Evaluaciones incluidas", titulo);
+        hoja.addMergedRegion(new CellRangeAddress(11, 11, 0, 4));
+        String[] columnas = {"N°", "Cuestionario", "Candidato / proyecto", "Fecha", "Estado"};
+        agregarFila(hoja.createRow(12), columnas, titulo);
+        int indice = 13;
+        int numero = 1;
+        for (EvaluacionOrdenMeritoDTO evaluacion : informe.evaluaciones()) {
+            Row fila = hoja.createRow(indice++);
+            agregarFila(fila, new String[]{String.valueOf(numero++), texto(evaluacion.id()), texto(evaluacion.proyecto()),
+                    texto(evaluacion.fecha()), texto(evaluacion.estado())}, celda);
+        }
+        if (informe.evaluaciones().isEmpty()) {
+            agregarCelda(hoja.createRow(indice), 0, MENSAJE_SIN_DATOS, celda);
+        }
+
+        hoja.setColumnWidth(0, 3_000);
+        hoja.setColumnWidth(1, 4_000);
+        hoja.setColumnWidth(2, 10_000);
+        hoja.setColumnWidth(3, 5_000);
+        hoja.setColumnWidth(4, 5_000);
+        hoja.getRow(0).setHeightInPoints(30);
+        hoja.getRow(5).setHeightInPoints(30);
+        hoja.getPrintSetup().setLandscape(true);
+        hoja.setFitToPage(true);
+        hoja.getPrintSetup().setFitWidth((short) 1);
+        hoja.getPrintSetup().setFitHeight((short) 1);
+        libro.setPrintArea(libro.getSheetIndex(hoja), 0, 4, 0, Math.max(12, indice - 1));
+    }
+
+    private void agregarDatoCaratula(Sheet hoja, int fila, String etiqueta, String valor, CellStyle estilo) {
+        Row registro = hoja.createRow(fila);
+        agregarCelda(registro, 0, etiqueta, estilo);
+        agregarCelda(registro, 1, valor, estilo);
+        hoja.addMergedRegion(new CellRangeAddress(fila, fila, 1, 4));
+    }
+
+    private CellStyle crearEstiloCaratula(Workbook libro) {
+        CellStyle estilo = crearEstiloCelda(libro);
+        Font fuente = libro.createFont();
+        fuente.setBold(true);
+        fuente.setFontHeightInPoints((short) 16);
+        fuente.setColor(IndexedColors.WHITE.getIndex());
+        estilo.setFont(fuente);
+        estilo.setFillForegroundColor(IndexedColors.VIOLET.getIndex());
+        estilo.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return estilo;
+    }
+
+    private CellStyle crearEstiloDatoCaratula(Workbook libro) {
+        CellStyle estilo = crearEstiloCelda(libro);
+        Font fuente = libro.createFont();
+        fuente.setColor(IndexedColors.DARK_BLUE.getIndex());
+        estilo.setFont(fuente);
+        estilo.setFillForegroundColor(IndexedColors.LAVENDER.getIndex());
+        estilo.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return estilo;
+    }
+
+    private long contar(InformeOrdenMeritoDTO informe, String estado) {
+        return informe.candidatos().stream().filter(candidato -> estado.equals(candidato.estadoMerito())).count();
     }
 
     private void crearHojaCandidatos(Workbook libro, String nombreHoja, String tituloSeccion,

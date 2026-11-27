@@ -41,29 +41,7 @@ public class GeneradorInformeWord implements GeneradorInformeOrdenMerito {
         try (XWPFDocument documento = new XWPFDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
             configurarPaginaHorizontal(documento);
             configurarNumeracion(documento);
-            XWPFParagraph titulo = documento.createParagraph();
-            titulo.setAlignment(ParagraphAlignment.CENTER);
-            titulo.setSpacingBefore(3000);
-            XWPFRun tituloRun = titulo.createRun();
-            tituloRun.setText("ORDEN DE MÉRITO");
-            tituloRun.setBold(true);
-            tituloRun.setFontSize(18);
-            tituloRun.setFontFamily("Arial");
-
-            XWPFParagraph puesto = documento.createParagraph();
-            puesto.setAlignment(ParagraphAlignment.CENTER);
-            XWPFRun puestoRun = puesto.createRun();
-            puestoRun.setText("Puesto: " + texto(informe.codigoPuesto()) + " - " + texto(informe.nombrePuesto()));
-            puestoRun.setFontFamily("Arial");
-            puestoRun.setFontSize(14);
-            puestoRun.setBold(true);
-            XWPFParagraph empresa = documento.createParagraph();
-            empresa.setAlignment(ParagraphAlignment.CENTER);
-            XWPFRun empresaRun = empresa.createRun();
-            empresaRun.setText("Empresa: " + texto(informe.empresa()));
-            empresaRun.setFontFamily("Arial");
-            empresaRun.setFontSize(12);
-
+            agregarPortada(documento, informe);
             documento.createParagraph().setPageBreak(true);
             agregarParrafo(documento, "Fecha de generación: " + FECHA_HORA.format(informe.fechaGeneracion()), false);
 
@@ -94,6 +72,96 @@ public class GeneradorInformeWord implements GeneradorInformeOrdenMerito {
         separador.setFontSize(8);
         var campoTotal = parrafo.getCTP().addNewFldSimple();
         campoTotal.setInstr("NUMPAGES");
+    }
+
+    private void agregarPortada(XWPFDocument documento, InformeOrdenMeritoDTO informe) {
+        XWPFParagraph encabezado = documento.createParagraph();
+        encabezado.setAlignment(ParagraphAlignment.CENTER);
+        encabezado.setSpacingBefore(1200);
+        XWPFRun titulo = encabezado.createRun();
+        titulo.setText("INFORME DE SELECCIÓN");
+        titulo.setFontFamily("Arial");
+        titulo.setFontSize(11);
+        titulo.setBold(true);
+        titulo.setColor("3F2581");
+        titulo.addBreak();
+        titulo.setText("ORDEN DE MÉRITO");
+        titulo.setFontSize(26);
+
+        XWPFParagraph bajada = documento.createParagraph();
+        bajada.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun bajadaRun = bajada.createRun();
+        bajadaRun.setText("Resultado de evaluación de candidatos");
+        bajadaRun.setFontFamily("Arial");
+        bajadaRun.setFontSize(12);
+        bajadaRun.setColor("757575");
+
+        agregarParrafoPortada(documento, "PUESTO", true, "3F2581", 10);
+        agregarParrafoPortada(documento, texto(informe.codigoPuesto()) + "  |  " + texto(informe.nombrePuesto()), true, "222222", 16);
+        agregarParrafoPortada(documento, "Empresa: " + texto(informe.empresa()), false, "333333", 11);
+        if (informe.descripcionPuesto() != null && !informe.descripcionPuesto().isBlank()) {
+            agregarParrafoPortada(documento, "Descripción: " + informe.descripcionPuesto(), false, "555555", 10);
+        }
+        agregarParrafoPortada(documento, "Fecha de emisión: " + FECHA_HORA.format(informe.fechaGeneracion()), false, "555555", 10);
+
+        XWPFTable resumen = documento.createTable(2, 4);
+        resumen.setWidth("100%");
+        String[] etiquetas = {"EVALUACIONES", "CANDIDATOS EVALUADOS", "CANDIDATOS APTOS", "NO ALCANZAN MÍNIMOS"};
+        String[] valores = {String.valueOf(informe.evaluaciones().size()), String.valueOf(informe.candidatos().size()),
+                String.valueOf(contar(informe, "APTO")), String.valueOf(contar(informe, "NO_ALCANZA_MINIMOS"))};
+        for (int i = 0; i < etiquetas.length; i++) {
+            XWPFTableCell etiqueta = resumen.getRow(0).getCell(i);
+            etiqueta.setColor("3F2581");
+            etiqueta.setText("");
+            XWPFRun etiquetaRun = etiqueta.getParagraphs().getFirst().createRun();
+            etiquetaRun.setText(etiquetas[i]);
+            etiquetaRun.setBold(true);
+            etiquetaRun.setColor("FFFFFF");
+            etiquetaRun.setFontFamily("Arial");
+            etiquetaRun.setFontSize(8);
+
+            XWPFTableCell valor = resumen.getRow(1).getCell(i);
+            valor.setColor("F4F0FF");
+            valor.setText("");
+            XWPFRun valorRun = valor.getParagraphs().getFirst().createRun();
+            valorRun.setText(valores[i]);
+            valorRun.setBold(true);
+            valorRun.setColor("3F2581");
+            valorRun.setFontFamily("Arial");
+            valorRun.setFontSize(14);
+        }
+
+        agregarParrafoPortada(documento, "Estado de los candidatos", true, "3F2581", 10);
+        agregarParrafoPortada(documento, "Aptos: " + contar(informe, "APTO")
+                + "  |  No alcanzan los mínimos: " + contar(informe, "NO_ALCANZA_MINIMOS")
+                + "  |  Puntaje pendiente: " + contar(informe, "PENDIENTE_PUNTAJE")
+                + "  |  Cuestionarios incompletos: " + contar(informe, "CUESTIONARIO_INCOMPLETO"), false, "333333", 9);
+        agregarParrafoPortada(documento, "Evaluaciones incluidas", true, "3F2581", 10);
+        int cantidadVisible = Math.min(informe.evaluaciones().size(), 5);
+        for (int i = 0; i < cantidadVisible; i++) {
+            EvaluacionOrdenMeritoDTO evaluacion = informe.evaluaciones().get(i);
+            agregarParrafoPortada(documento, "•  " + texto(evaluacion.proyecto()) + "  |  "
+                    + texto(evaluacion.fecha()) + "  |  " + texto(evaluacion.estado()), false, "555555", 9);
+        }
+        if (informe.evaluaciones().size() > cantidadVisible) {
+            agregarParrafoPortada(documento, "Y " + (informe.evaluaciones().size() - cantidadVisible)
+                    + " evaluación(es) más, detalladas en las páginas siguientes.", false, "555555", 9);
+        }
+    }
+
+    private void agregarParrafoPortada(XWPFDocument documento, String texto, boolean destacado, String color, int tamanio) {
+        XWPFParagraph parrafo = documento.createParagraph();
+        parrafo.setSpacingAfter(80);
+        XWPFRun run = parrafo.createRun();
+        run.setText(texto);
+        run.setFontFamily("Arial");
+        run.setFontSize(tamanio);
+        run.setBold(destacado);
+        run.setColor(color);
+    }
+
+    private long contar(InformeOrdenMeritoDTO informe, String estado) {
+        return informe.candidatos().stream().filter(candidato -> estado.equals(candidato.estadoMerito())).count();
     }
 
     private void configurarPaginaHorizontal(XWPFDocument documento) {
