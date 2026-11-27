@@ -14,6 +14,9 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.puesto.gestor.GestorPuesto;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Sheet;
+import ar.edu.utn.frsf.g9.capitalhumano.ConsultorAutenticadoEnTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +45,20 @@ class EvaluacionIntegrationTest {
     @Autowired
     private CuestionarioDAO cuestionarioDAO;
 
+    /** Candidatos del seed sin cuestionarios (CU 025). */
+    private static final long ROMERO = 19L;
+    private static final long DIAZ = 20L;
+
+    @BeforeEach
+    void autenticar() {
+        ConsultorAutenticadoEnTest.autenticar();
+    }
+
+    @AfterEach
+    void limpiar() {
+        ConsultorAutenticadoEnTest.limpiar();
+    }
+
     @Test
     @DisplayName("Búsqueda de candidatos ignora mayúsculas y acentos")
     void buscarCandidatos_ignoraAcentos() {
@@ -49,41 +66,42 @@ class EvaluacionIntegrationTest {
         assertThat(resultado).extracting(CandidatoDTO::nombre).containsExactlyInAnyOrder("AGUSTÍN", "LUCAS");
 
         assertThat(gestorCandidatos.buscarCandidatos("perez", "juan", null)).hasSize(1);
-        assertThat(gestorCandidatos.buscarCandidatos(null, null, 5L))
+        assertThat(gestorCandidatos.buscarCandidatos(null, null, DIAZ))
                 .singleElement().extracting(CandidatoDTO::apellido).isEqualTo("DÍAZ");
     }
 
     @Test
-    @DisplayName("Puestos del seed: BACK-01 es evaluable y DEV-01 no (9.A)")
+    @DisplayName("Puestos del seed: BACK-01 es evaluable y QA-01 no (9.A)")
     void validarPuestosDelSeed() {
         assertThat(gestorPuesto.buscar(null, null, null)).extracting(p -> p.codigo())
                 .contains("BACK-01", "DEV-01", "QA-01");
 
         assertThat(gestorCandidatos.validarCompetenciasEvaluables("BACK-01").evaluable()).isTrue();
 
-        var dev = gestorCandidatos.validarCompetenciasEvaluables("DEV-01");
-        assertThat(dev.evaluable()).isFalse();
-        assertThat(dev.competenciasNoEvaluables()).containsExactly("TRABAJO EN EQUIPO");
+        // QA-01 requiere RESOLUCIÓN DE PROBLEMAS, que no tiene factores con preguntas
+        var qa = gestorCandidatos.validarCompetenciasEvaluables("QA-01");
+        assertThat(qa.evaluable()).isFalse();
+        assertThat(qa.competenciasNoEvaluables()).containsExactly("RESOLUCIÓN DE PROBLEMAS");
     }
 
     @Test
     @DisplayName("6.A: candidatos del seed con cuestionario ACTIVO / EN_PROCESO no pueden evaluarse")
     void candidatosConCuestionarioActivo() {
-        assertThatThrownBy(() -> gestorCandidatos.verificarCandidatosDisponibles(List.of(1L, 2L, 3L, 4L)))
+        // PÉREZ (1) tiene un cuestionario ACTIVO; LÓPEZ (3) lo tiene COMPLETO
+        assertThatThrownBy(() -> gestorCandidatos.verificarCandidatosDisponibles(List.of(1L, 3L, ROMERO)))
                 .isInstanceOf(ReglaNegocioException.class)
                 .hasMessageContaining("PÉREZ, JUAN")
-                .hasMessageContaining("GÓMEZ, MARÍA")
                 .hasMessageNotContaining("LÓPEZ");
 
         // El candidato 3 tiene su cuestionario COMPLETO: puede volver a evaluarse
-        assertThat(gestorCandidatos.verificarCandidatosDisponibles(List.of(3L, 4L))).hasSize(2);
+        assertThat(gestorCandidatos.verificarCandidatosDisponibles(List.of(3L, ROMERO))).hasSize(2);
     }
 
     @Test
     @DisplayName("Flujo completo: preparar, finalizar, cuestionarios ACTIVOS y exportación a Excel")
     void flujoCompleto() throws Exception {
         List<CandidatoClaveDTO> preparados = gestorCandidatos.prepararEvaluacion(
-                new EvaluarCandidatosRequestDTO(List.of(4L, 5L), "BACK-01"));
+                new EvaluarCandidatosRequestDTO(List.of(ROMERO, DIAZ), "BACK-01"));
         assertThat(preparados).hasSize(2);
 
         EvaluacionCreadaDTO creada = gestorCandidatos.evaluarCandidatos(
@@ -100,7 +118,7 @@ class EvaluacionIntegrationTest {
                 .allSatisfy(q -> assertThat(q.getEstado()).isEqualTo(EstadoCuestionario.ACTIVO));
 
         // Ahora los candidatos tienen cuestionario activo: no pueden evaluarse de nuevo (6.A)
-        assertThatThrownBy(() -> gestorCandidatos.verificarCandidatosDisponibles(List.of(4L)))
+        assertThatThrownBy(() -> gestorCandidatos.verificarCandidatosDisponibles(List.of(ROMERO)))
                 .isInstanceOf(ReglaNegocioException.class);
 
         ArchivoExcelDTO excel = gestorCandidatos.exportarResultados(creada.evaluacionId());

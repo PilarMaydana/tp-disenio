@@ -8,6 +8,7 @@ import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dao.EvaluacionDAO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dto.CandidatoClaveDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.features.evaluacion.dto.ConfirmarEvaluacionRequestDTO;
 import ar.edu.utn.frsf.g9.capitalhumano.shared.exception.ReglaNegocioException;
+import ar.edu.utn.frsf.g9.capitalhumano.ConsultorAutenticadoEnTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CuestionarioConcurrenciaTest {
 
     /** Candidato del seed sin cuestionarios (no lo usa ningún otro test). */
-    private static final long CANDIDATO = 8L;
+    private static final long CANDIDATO = 23L;   // ROMERO, LUCAS
     private static final int ENVIOS = 3;
 
     @Autowired
@@ -54,8 +55,13 @@ class CuestionarioConcurrenciaTest {
 
     @BeforeEach
     void crearCuestionario() {
-        evaluacionId = gestorCandidatos.evaluarCandidatos(new ConfirmarEvaluacionRequestDTO("BACK-01",
-                List.of(new CandidatoClaveDTO(CANDIDATO, null, null, null, null, null)))).evaluacionId();
+        ConsultorAutenticadoEnTest.autenticar();
+        try {
+            evaluacionId = gestorCandidatos.evaluarCandidatos(new ConfirmarEvaluacionRequestDTO("BACK-01",
+                    List.of(new CandidatoClaveDTO(CANDIDATO, null, null, null, null, null)))).evaluacionId();
+        } finally {
+            ConsultorAutenticadoEnTest.limpiar();
+        }
     }
 
     @AfterEach
