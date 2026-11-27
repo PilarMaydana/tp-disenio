@@ -40,9 +40,9 @@ function EnDesarrolloContent() {
 
         {/* Botón para retornar a la pantalla activa */}
         <div className="pt-4">
-          <Link href={ROUTES.CONSULTOR.PUESTOS_NUEVO}>
+          <Link href={ROUTES.CONSULTOR.INICIO}>
             <Button variant="primary" leftIcon="arrow_back">
-              Volver a Alta de Puesto
+              Volver al Inicio
             </Button>
           </Link>
         </div>

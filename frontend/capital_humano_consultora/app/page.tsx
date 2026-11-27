@@ -17,7 +17,7 @@ export default function HomePage() {
       if (user.role === 'CANDIDATO') {
         router.replace(ROUTES.CANDIDATO.CUESTIONARIO);
       } else {
-        router.replace(ROUTES.CONSULTOR.PUESTOS_NUEVO);
+        router.replace(ROUTES.CONSULTOR.INICIO);
       }
     }
   }, [user, isAuthenticated, isLoading, router]);

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { OpcionRespuestaResumen } from '../types';
 import { opcionRespuestaService } from '../services/opcionRespuestaService';
 import { ApiError } from '@/services/apiClient';
+import { ROUTES } from '@/constants/routes';
 
 export interface UseGestionarOpcionesRespuestaOptions {
   onNavigateNuevo?: () => void;
@@ -105,8 +106,7 @@ export function useGestionarOpcionesRespuesta(
       options.onNavigateSalir();
       return;
     }
-    // TODO: apuntar a la pantalla de inicio cuando exista
-    router.push('/');
+    router.push(ROUTES.CONSULTOR.INICIO);
   }, [options, router]);
 
   // Búsqueda inicial automática si la URL trae el param `nombre` (incluso si viene vacío: ?nombre=)

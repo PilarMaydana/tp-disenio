@@ -93,8 +93,8 @@ export function useAutenticacion(options: UseAutenticacionOptions = {}) {
       if (options.onSuccessConsultor) {
         options.onSuccessConsultor(response);
       } else {
-        // Redirección por defecto para Consultor: pantalla principal CU009 (Dar de alta Puesto)
-        router.replace(ROUTES.CONSULTOR.PUESTOS_NUEVO);
+        // Redirección por defecto para Consultor: panel principal de bienvenida
+        router.replace(ROUTES.CONSULTOR.INICIO);
       }
     } catch (err: unknown) {
       handleAuthError(err, 'CONSULTOR');
