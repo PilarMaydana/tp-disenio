@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${roboto.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-roboto bg-[#F6F6F6] text-[#000000]">
+    <html lang="es" className={`${roboto.variable} h-full overflow-hidden antialiased`}>
+      <body className="h-full overflow-hidden flex flex-col font-roboto bg-[#F6F6F6] text-[#000000]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -13,7 +13,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   subtitle = 'Sistema de Evaluación de Perfiles Laborales',
 }) => {
   return (
-    <div className="relative min-h-screen bg-[#EBEBEB] flex flex-col justify-center items-center p-4 py-8 overflow-x-hidden">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#EBEBEB]">
+      <div className="relative min-h-full flex flex-col justify-center items-center p-4 py-8">
       {/* Franja morada oscura institucional superior en el fondo */}
       <div
         className="absolute top-0 left-0 right-0 h-[38vh] min-h-[250px] max-h-[360px] bg-gradient-to-r from-[#341E6C] via-[#3F2581] to-[#4F378A] shadow-md z-0"
@@ -37,6 +38,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
         {/* Formulario */}
         <div className="w-full">{children}</div>
+      </div>
       </div>
     </div>
   );
