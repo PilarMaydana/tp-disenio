@@ -29,6 +29,12 @@ mvnw.cmd spring-boot:run
 - **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **Endpoint de verificación (Ping):** [http://localhost:8080/api/ping](http://localhost:8080/api/ping)
 
+### Orden de mérito (CU 028)
+
+- `GET /api/ordenes-merito/puestos/{puestoId}/reporte?evaluacionIds={id}` devuelve los candidatos clasificados para las evaluaciones seleccionadas.
+- Cada candidato con estado `NO_ALCANZA_MINIMOS` incluye `minimosNoAlcanzados`, una lista con la competencia, el puntaje obtenido y el puntaje mínimo requerido. La interfaz presenta este detalle en una tabla dentro de la sección «No alcanzan los mínimos requeridos».
+- Para ejecutar las pruebas del clasificador, desde `api/` usar `./mvnw -Dtest=ClasificadorMeritoTest test` (Windows: `mvnw.cmd -Dtest=ClasificadorMeritoTest test`).
+
 ### Producción
 
 Iniciar con `SPRING_PROFILES_ACTIVE=prod` y configurar estas variables antes de arrancar. La aplicación no inicia si faltan valores obligatorios, el LDAP no usa LDAPS o la clave JWT tiene menos de 32 caracteres.

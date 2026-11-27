@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, FileSpreadsheet, FileText, MoreHorizontal, Printer, Search, SlidersHorizontal, X } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,7 @@ import { useAutoDismissError } from '@/hooks/useAutoDismissError';
 
 type Candidato = CandidatoOrdenMerito & { documento: string; estado: 'apto' | 'minimo' | 'incompleto' | 'pendiente'; puntaje: number | null; inicio: string; fin?: string };
 
-const inputClass = 'w-full rounded-lg border border-[#D4CCDF] bg-white px-3.5 py-3 text-sm text-[#24212A] outline-none transition focus:border-[#6A4BA3] focus:ring-2 focus:ring-[#6A4BA3]/15';
+const inputClass = 'w-full rounded-lg border border-[#3F2581]/50 bg-white px-4 py-2.5 text-base text-[#000000] outline-none transition-colors focus:border-[#3F2581] focus:ring-2 focus:ring-[#3F2581]/20';
 const panelClass = 'rounded-xl border border-[#E3DFE9] bg-white shadow-[0_3px_12px_rgba(30,20,50,0.05)]';
 
 function OrdenMeritosContent() {
@@ -18,6 +18,7 @@ function OrdenMeritosContent() {
   const [campoSugerencias, setCampoSugerencias] = useState<'codigo' | 'nombrePuesto' | null>(null);
   const [sugerencias, setSugerencias] = useState<PuestoOrdenMerito[]>([]);
   const [consultaSugerencias, setConsultaSugerencias] = useState('');
+  const catalogoPuestosRef = useRef<Promise<PuestoOrdenMerito[]> | null>(null);
   const [puestos, setPuestos] = useState<PuestoOrdenMerito[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionOrdenMerito[]>([]);
@@ -59,19 +60,25 @@ function OrdenMeritosContent() {
     let vigente = true;
     const temporizador = window.setTimeout(async () => {
       try {
-        const lista = await ordenMeritoService.buscarPuestos(
-          campoSugerencias === 'codigo'
-            ? { codigo: terminoSugerencias }
-            : { nombrePuesto: terminoSugerencias }
+        if (!catalogoPuestosRef.current) {
+          catalogoPuestosRef.current = ordenMeritoService.buscarPuestos({});
+        }
+        const catalogo = await catalogoPuestosRef.current;
+        const termino = terminoSugerencias.toLocaleLowerCase();
+        const lista = catalogo.filter((puesto) =>
+          (campoSugerencias === 'codigo' ? puesto.codigo : puesto.nombrePuesto)
+            .toLocaleLowerCase().includes(termino)
         );
         if (vigente) {
           setSugerencias(lista.slice(0, 8));
           setConsultaSugerencias(`${campoSugerencias}:${terminoSugerencias.toLocaleLowerCase()}`);
         }
-      } catch {
+      } catch (e) {
         if (vigente) {
           setSugerencias([]);
           setConsultaSugerencias(`${campoSugerencias}:${terminoSugerencias.toLocaleLowerCase()}`);
+          setError(e instanceof Error ? e.message : 'No se pudieron cargar las sugerencias de puestos.');
+          catalogoPuestosRef.current = null;
         }
       }
     }, 250);
@@ -131,6 +138,9 @@ function OrdenMeritosContent() {
   }
 
   function seleccionarSugerencia(puesto: PuestoOrdenMerito) {
+    setEmpresas((actuales) => actuales.some((empresa) => empresa.id === puesto.empresaId)
+      ? actuales
+      : [...actuales, { id: puesto.empresaId, nombre: puesto.empresaNombre }]);
     setFiltros((actuales) => ({
       ...actuales,
       codigo: puesto.codigo,
@@ -170,17 +180,13 @@ function OrdenMeritosContent() {
         : restoBase;
     const sugerenciaEnLinea = sugerenciaBase ? `${textoBuscado}${restoSugerido}` : undefined;
 
-    return <label className="space-y-1.5 text-xs font-semibold uppercase tracking-wide text-[#57515F]">{etiqueta}
+    return <label className="space-y-1.5 text-sm font-medium text-[#000000]">{etiqueta}
       <div className="relative" onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setCampoSugerencias(null);
       }}>
-        <div className="relative">
-          {restoSugerido && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center overflow-hidden whitespace-pre px-3.5 py-3 text-sm font-normal normal-case tracking-normal">
-            <span className="text-transparent">{textoActual}</span><span className="text-[#9B91AA]">{restoSugerido}</span>
-          </div>}
-          <input
-            className={`${inputClass.replace('bg-white', 'bg-transparent')} relative z-10 font-normal normal-case tracking-normal`}
-            placeholder={placeholder}
+        <input
+            className={inputClass}
+            placeholder={abierto && sugerenciasActuales.length > 0 ? '' : placeholder}
             value={textoActual}
             role="combobox"
             aria-autocomplete="both"
@@ -200,8 +206,7 @@ function OrdenMeritosContent() {
               }
             }}
           />
-        </div>
-        {restoSugerido && <span id={`ayuda-autocompletado-${campo}`} className="block text-[11px] font-normal normal-case tracking-normal text-[#77717E]">Sugerencia: {sugerenciaEnLinea} · Tab o → para completar</span>}
+        {restoSugerido && <span id={`ayuda-autocompletado-${campo}`} className="mt-1 block text-xs font-normal text-[#757575]">Sugerencia: {sugerenciaEnLinea} · Tab o → para completar</span>}
         {abierto && sugerenciasActuales.length > 0 && <ul id={`sugerencias-${campo}`} role="listbox" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-[#D4CCDF] bg-white py-1 shadow-lg">
           {sugerenciasActuales.map((puesto) => <li key={puesto.id} role="option" aria-selected="false">
             <button type="button" className="flex w-full flex-col items-start px-3.5 py-2 text-left normal-case hover:bg-[#F6F3FA] focus:bg-[#F6F3FA] focus:outline-none" onClick={() => seleccionarSugerencia(puesto)}>
@@ -274,7 +279,7 @@ function OrdenMeritosContent() {
       </section>
       <div className="grid gap-5 lg:grid-cols-2">
         <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ClipboardList size={20} className="text-[#77717E]"/> Cuestionarios incompletos</h2><div className="space-y-3">{candidatosIncompletos.length ? candidatosIncompletos.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</p>}</div></section>
-        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ArrowRight size={20} className="text-[#77717E]"/> No alcanzan los mínimos requeridos</h2><div className="space-y-3">{candidatosSinMinimos.length ? candidatosSinMinimos.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</p>}</div></section>
+        <section className={`${panelClass} p-5`}><h2 className="mb-4 flex items-center gap-2 border-b border-[#E7E4EB] pb-3 text-lg font-semibold"><ArrowRight size={20} className="text-[#77717E]"/> No alcanzan los mínimos requeridos</h2><div className="space-y-3">{candidatosSinMinimos.length ? candidatosSinMinimos.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c} />) : <p className="py-4 text-center text-sm text-[#77717E]">No hay información disponible para esta sección.</p>}</div></section>
       </div>
       <section className={`${panelClass} p-5`}><h2 className="mb-3 text-lg font-semibold">Puntaje pendiente</h2><div className="grid gap-3 md:grid-cols-2">{candidatosPendientes.length ? candidatosPendientes.map(c=><CandidatoDetalle key={c.cuestionarioId} candidato={c}/>) : <p className="py-4 text-center text-sm text-[#77717E] md:col-span-2">No hay información disponible para esta sección.</p>}</div></section>
       <p className="text-xs text-[#77717E] print:hidden">Los candidatos se muestran según el estado real de su cuestionario. El puntaje aparecerá cuando el sistema persista las respuestas de evaluación.</p>
@@ -332,14 +337,35 @@ function OrdenMeritosContent() {
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF9FC] px-4 py-3"><span className="text-sm text-[#625D67]">{evaluacionesSeleccionadas.length} evaluaciones seleccionadas</span><div className="flex gap-2"><Button variant="secondary" onClick={()=>{setPuestoSeleccionado(null);setEvaluacionesSeleccionadas([])}}>Cancelar</Button><Button onClick={abrirReporte} disabled={!evaluacionesSeleccionadas.length} rightIcon="arrow_forward">Generar orden</Button></div></div>
       </section>
     </> : <>
-      <form onSubmit={buscar} className={`${panelClass} p-5 sm:p-6`}><h2 className="mb-4 text-lg font-semibold">Buscar puestos</h2><div className="grid gap-4 md:grid-cols-3">{campoPuesto('codigo', 'Código del puesto', 'Ej. PUE-2026-101')}{campoPuesto('nombrePuesto', 'Nombre del puesto', 'Ej. Gerente, Analista...')}<label className="space-y-1.5 text-xs font-semibold uppercase tracking-wide text-[#57515F]">Empresa<span className="relative block"><select className={`${inputClass} appearance-none pr-9`} value={filtros.empresaId} onFocus={cargarEmpresas} onChange={e=>{setError('');setFiltros({...filtros,empresaId:e.target.value})}}><option value="">Seleccione una empresa</option>{empresas.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#77717E]"/></span></label></div><div className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={limpiar}>Limpiar</Button><Button type="submit" isLoading={buscando} leftIcon="search">Buscar</Button></div></form>
-      {busco ? <><div className="flex items-end justify-between"><div><p className="text-xs font-semibold uppercase tracking-wider text-[#77717E]">Módulo de convocatorias <span className="px-1">›</span> CU028</p><h2 className="mt-1 text-xl font-semibold">Resultados de la búsqueda</h2><p className="mt-1 text-sm text-[#77717E]">{resultados.length} puestos encontrados</p></div></div>{resultados.length ? <div className="grid gap-4 md:grid-cols-2">{resultados.map((puesto)=><article key={puesto.id} className={`${panelClass} flex flex-col p-5`}><div className="flex items-center justify-between gap-3"><span className="rounded bg-[#F0EFF2] px-2.5 py-1 text-xs tracking-wider text-[#726C78]">{puesto.codigo}</span><span className="flex items-center gap-1.5 rounded-full bg-[#F6F5F8] px-2.5 py-1 text-xs text-[#625D67]"><Building2 size={13}/>{empresaNombre(puesto)}</span></div><h3 className="mt-4 text-lg font-semibold">{puesto.nombrePuesto}</h3><p className="mt-1 line-clamp-2 min-h-10 text-sm text-[#625D67]">{puesto.descripcion || 'Puesto disponible para evaluación de candidatos.'}</p><div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E7E4EB] pt-4"><div><p className="text-xs font-semibold uppercase text-[#625D67]">Evaluaciones completas</p><p className="mt-1 flex items-center gap-2"><CheckCircle2 size={16} className="text-[#5F5970]"/><strong>{String(puesto.evaluacionesCompletas).padStart(2,'0')}</strong><span className="text-xs text-[#625D67]">de {puesto.candidatos} cuestionarios</span></p></div><Button size="sm" onClick={async()=>{setError('');try{const lista=await ordenMeritoService.listarEvaluaciones(puesto.id);if(!lista.length){setError('Este puesto no posee evaluaciones asociadas.');return}reiniciarFiltrosEvaluacion();setEvaluaciones(lista);setPuestoSeleccionado(puesto);setEvaluacionesSeleccionadas([])}catch(e){setError(e instanceof Error?e.message:'No se pudieron cargar las evaluaciones.')}}} rightIcon="arrow_forward">Emitir orden de mérito</Button></div></article>)}</div> : <div className={`${panelClass} px-6 py-14 text-center`}><Search size={28} className="mx-auto mb-3 text-[#8872B4]"/><h3 className="font-semibold">No se encontraron puestos</h3><p className="mt-1 text-sm text-[#77717E]">Probá con otros criterios de búsqueda.</p></div>}</> : <div className={`${panelClass} px-6 py-12 text-center`}><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEE6FA] text-[#684DA0]"><Search size={24}/></div><h2 className="font-semibold">Buscá un puesto para emitir su orden de mérito</h2><p className="mx-auto mt-2 max-w-lg text-sm text-[#77717E]">Ingresá código, nombre o empresa. Luego podrás elegir una o todas las evaluaciones disponibles.</p></div>}
+      <form onSubmit={buscar} className={`${panelClass} p-5 sm:p-6`}><h2 className="mb-4 text-lg font-semibold">Buscar puestos</h2><div className="grid gap-4 md:grid-cols-3">{campoPuesto('codigo', 'Código del puesto', 'Ej. PUE-2026-101')}{campoPuesto('nombrePuesto', 'Nombre del puesto', 'Ej. Gerente, Analista...')}<label className="space-y-1.5 text-sm font-medium text-[#000000]">Empresa<span className="relative block"><select className={`${inputClass} appearance-none pr-9`} value={filtros.empresaId} onFocus={async()=>{setError('');if(!empresas.length)setEmpresas(await ordenMeritoService.listarEmpresas())}} onChange={e=>{setError('');setFiltros({...filtros,empresaId:e.target.value})}}><option value="">Seleccione una empresa</option>{empresas.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#77717E]"/></span></label></div><div className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={limpiar}>Limpiar</Button><Button type="submit" isLoading={buscando} leftIcon="search">Buscar</Button></div></form>
+      {busco ? <><div className="flex items-end justify-between"><div><p className="text-xs font-semibold uppercase tracking-wider text-[#77717E]">Módulo de convocatorias</p><h2 className="mt-1 text-xl font-semibold">Resultados de la búsqueda</h2><p className="mt-1 text-sm text-[#77717E]">{resultados.length} puestos encontrados</p></div></div>{resultados.length ? <div className="grid gap-4 md:grid-cols-2">{resultados.map((puesto)=><article key={puesto.id} className={`${panelClass} flex flex-col p-5`}><div className="flex items-center justify-between gap-3"><span className="rounded bg-[#F0EFF2] px-2.5 py-1 text-xs tracking-wider text-[#726C78]">{puesto.codigo}</span><span className="flex items-center gap-1.5 rounded-full bg-[#F6F5F8] px-2.5 py-1 text-xs text-[#625D67]"><Building2 size={13}/>{empresaNombre(puesto)}</span></div><h3 className="mt-4 text-lg font-semibold">{puesto.nombrePuesto}</h3><p className="mt-1 line-clamp-2 min-h-10 text-sm text-[#625D67]">{puesto.descripcion || 'Puesto disponible para evaluación de candidatos.'}</p><div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E7E4EB] pt-4"><div><p className="text-xs font-semibold uppercase text-[#625D67]">Evaluaciones completas</p><p className="mt-1 flex items-center gap-2"><CheckCircle2 size={16} className="text-[#5F5970]"/><strong>{String(puesto.evaluacionesCompletas).padStart(2,'0')}</strong><span className="text-xs text-[#625D67]">de {puesto.candidatos} cuestionarios</span></p></div><Button size="sm" onClick={async()=>{setError('');try{const lista=await ordenMeritoService.listarEvaluaciones(puesto.id);if(!lista.length){setError('Este puesto no posee evaluaciones asociadas.');return}reiniciarFiltrosEvaluacion();setEvaluaciones(lista);setPuestoSeleccionado(puesto);setEvaluacionesSeleccionadas([])}catch(e){setError(e instanceof Error?e.message:'No se pudieron cargar las evaluaciones.')}}} rightIcon="arrow_forward">Emitir orden de mérito</Button></div></article>)}</div> : <div className={`${panelClass} px-6 py-14 text-center`}><Search size={28} className="mx-auto mb-3 text-[#8872B4]"/><h3 className="font-semibold">No se encontraron puestos</h3><p className="mt-1 text-sm text-[#77717E]">Probá con otros criterios de búsqueda.</p></div>}</> : <div className={`${panelClass} px-6 py-12 text-center`}><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEE6FA] text-[#684DA0]"><Search size={24}/></div><h2 className="font-semibold">Buscá un puesto para emitir su orden de mérito</h2><p className="mx-auto mt-2 max-w-lg text-sm text-[#77717E]">Ingresá código, nombre o empresa. Luego podrás elegir una o todas las evaluaciones disponibles.</p></div>}
+
     </>}
   </div>;
 }
 
 function CandidatoDetalle({ candidato }: { candidato: Candidato }) {
-  return <article className="rounded-lg border border-[#E2DFE6] bg-[#F8F8FA] p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{candidato.apellido}, {candidato.nombre}</p><p className="text-xs text-[#6E6973]">{candidato.documento}</p></div><span className="rounded bg-[#E3E3E5] px-2 py-1 text-xs font-semibold text-[#55515B]">{candidato.estadoCuestionario.replaceAll('_', ' ')}</span></div><div className="mt-3 grid grid-cols-2 gap-2 rounded-md border border-[#ECE9EF] bg-white p-3 text-xs text-[#625D67]"><p><strong className="block text-[#29252E]">Fecha inicio</strong>{candidato.inicio}</p><p><strong className="block text-[#29252E]">Fecha finalización</strong>{candidato.fin || 'Sin completar'}</p><p className="col-span-2"><strong className="text-[#29252E]">Puntaje obtenido: </strong>{candidato.puntaje === null ? 'Pendiente' : candidato.puntaje.toFixed(2)}</p></div>{candidato.datosAdicionales&&<p className="mt-2 text-xs">Datos adicionales: {candidato.datosAdicionales}</p>}</article>;
+  return <article className="overflow-hidden rounded-lg border border-[#E2DFE6] bg-white">
+    <header className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F8FA] px-4 py-3">
+      <div><p className="font-semibold text-[#29252E]">{candidato.apellido}, {candidato.nombre}</p><p className="mt-0.5 text-xs text-[#6E6973]">{candidato.documento}</p></div>
+      <span className="rounded-full bg-[#EEEAF4] px-3 py-1 text-xs font-semibold text-[#51377F]">{candidato.estadoCuestionario.replaceAll('_', ' ')}</span>
+    </header>
+    <div className="grid gap-3 border-b border-[#E7E4EB] px-4 py-3 text-xs sm:grid-cols-3">
+      <p><span className="block text-[#77717E]">Fecha inicio</span><strong className="mt-0.5 block text-[#29252E]">{candidato.inicio}</strong></p>
+      <p><span className="block text-[#77717E]">Fecha finalización</span><strong className="mt-0.5 block text-[#29252E]">{candidato.fin || 'Sin completar'}</strong></p>
+      <p><span className="block text-[#77717E]">Puntaje total</span><strong className="mt-0.5 block text-[#29252E]">{candidato.puntaje === null ? 'Pendiente' : candidato.puntaje.toFixed(2)}</strong></p>
+    </div>
+    {candidato.estado === 'minimo' && <section className="p-4">
+      <h3 className="mb-2 text-sm font-semibold text-[#29252E]">Competencias por debajo del mínimo</h3>
+      <div className="overflow-x-auto rounded-md border border-[#E7E4EB]">
+        <table className="w-full min-w-[420px] text-left text-xs">
+          <thead className="bg-[#F6F3FA] text-[#57515F]"><tr><th className="px-3 py-2 font-semibold">Competencia</th><th className="px-3 py-2 text-right font-semibold">Puntaje obtenido</th><th className="px-3 py-2 text-right font-semibold">Mínimo requerido</th></tr></thead>
+          <tbody className="divide-y divide-[#ECE9EF]">{candidato.minimosNoAlcanzados.map((item) => <tr key={item.competencia}><td className="px-3 py-2.5 font-medium text-[#29252E]">{item.competencia}</td><td className="px-3 py-2.5 text-right text-[#9B3030]">{item.puntajeObtenido.toFixed(2)}</td><td className="px-3 py-2.5 text-right text-[#625D67]">{item.puntajeMinimo.toFixed(2)}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </section>}
+    {candidato.datosAdicionales && <p className="border-t border-[#E7E4EB] px-4 py-3 text-xs text-[#625D67]"><strong className="text-[#29252E]">Datos adicionales: </strong>{candidato.datosAdicionales}</p>}
+  </article>;
 }
 
 export default function OrdenMeritosPage() { return <DashboardLayout><OrdenMeritosContent /></DashboardLayout>; }
