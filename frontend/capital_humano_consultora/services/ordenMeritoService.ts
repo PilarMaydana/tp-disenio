@@ -29,6 +29,7 @@ export interface CandidatoOrdenMerito {
   puntajeObtenido: number | null;
   estadoMerito: 'APTO' | 'NO_ALCANZA_MINIMOS' | 'PENDIENTE_PUNTAJE' | 'CUESTIONARIO_INCOMPLETO';
   cumpleMinimos: boolean | null;
+  minimosNoAlcanzados: { competencia: string; puntajeObtenido: number; puntajeMinimo: number }[];
   fechaInicio: string | null;
   fechaFinalizacion: string | null;
   datosAdicionales: string | null;

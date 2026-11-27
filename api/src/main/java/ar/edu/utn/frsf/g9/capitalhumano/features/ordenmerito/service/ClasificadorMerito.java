@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Aplica las reglas de mérito y el orden de prioridad de los candidatos. */
 @Service
@@ -39,12 +40,21 @@ public class ClasificadorMerito {
                 : null;
 
         Boolean cumpleMinimos = null;
+        List<CandidatoOrdenMeritoDTO.IncumplimientoMinimoDTO> minimosNoAlcanzados = List.of();
         String estadoMerito;
         if (!completo) {
             estadoMerito = "CUESTIONARIO_INCOMPLETO";
         } else if (!tieneTodosLosPuntajes) {
             estadoMerito = "PENDIENTE_PUNTAJE";
         } else {
+            minimosNoAlcanzados = puesto.getCaracteristicas().stream()
+                    .filter(caracteristica -> puntajes.get(caracteristica.getCompetencia().getId())
+                            < caracteristica.getPonderacionRequerida())
+                    .map(caracteristica -> new CandidatoOrdenMeritoDTO.IncumplimientoMinimoDTO(
+                            caracteristica.getCompetencia().getNombre(),
+                            puntajes.get(caracteristica.getCompetencia().getId()),
+                            caracteristica.getPonderacionRequerida()))
+                    .collect(Collectors.toList());
             cumpleMinimos = puesto.getCaracteristicas().stream().allMatch(caracteristica ->
                     puntajes.get(caracteristica.getCompetencia().getId()) >= caracteristica.getPonderacionRequerida());
             estadoMerito = cumpleMinimos ? "APTO" : "NO_ALCANZA_MINIMOS";
@@ -54,7 +64,7 @@ public class ClasificadorMerito {
         return new CandidatoOrdenMeritoDTO(cuestionario.getId(), candidato.getTipoDocumento().name(),
                 candidato.getNroDocumento(), candidato.getApellido(), candidato.getNombre(),
                 cuestionario.getEstado() == null ? "SIN_ESTADO" : cuestionario.getEstado().name(), total,
-                estadoMerito, cumpleMinimos, cuestionario.getFechaInicio(), cuestionario.getFechaFinalizacion(),
+                estadoMerito, cumpleMinimos, minimosNoAlcanzados, cuestionario.getFechaInicio(), cuestionario.getFechaFinalizacion(),
                 candidato.getEscolaridad());
     }
 
