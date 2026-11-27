@@ -99,12 +99,12 @@ INSERT INTO respuesta_cuestionario (cuestionario_id, pregunta_id, opcion_respues
     (5, 3, 5), (5, 4, 8), (5, 5, 12), (5, 6, 15);
 -- CU 025: evaluación que agrupa los cuestionarios de ejemplo
 INSERT INTO evaluacion (puesto_id, fecha_creacion) VALUES
-    (1, CURRENT_TIMESTAMP);
+    ((SELECT id FROM puesto WHERE codigo = 'DEV-01'), CURRENT_TIMESTAMP);
 
-INSERT INTO cuestionario (candidato_id, evaluacion_id, puesto_id, estado, clave_acceso, fecha_creacion, eliminado) VALUES
-    (1, 1, 1, 'ACTIVO', 'CLAVE123', CURRENT_TIMESTAMP, FALSE),
-    (2, 1, 1, 'EN_PROCESO', 'TEST4567', CURRENT_TIMESTAMP, FALSE),
-    (3, 1, 1, 'COMPLETO', 'COMP1234', CURRENT_TIMESTAMP, FALSE);
+-- Los cuestionarios de DEV-01 ya cargados más arriba quedan agrupados en esa evaluación
+-- (no se vuelven a insertar: duplicarlos dejaba dos cuestionarios abiertos con la misma clave).
+UPDATE cuestionario SET evaluacion_id = (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'DEV-01'))
+WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'DEV-01') AND evaluacion_id IS NULL;
 
 
 -- ---------------------------------------------------------------------------
@@ -117,12 +117,12 @@ INSERT INTO pregunta (nombre, enunciado, descripcion, factor_id, eliminado) VALU
     ('ESCUCHA ACTIVA', '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?', 'COMUNICACIÓN VERBAL', 1, FALSE);
 
 INSERT INTO pregunta_opcion_respuesta (pregunta_id, nombre, descripcion, nro_orden, ponderacion) VALUES
-    (3, 'NUNCA', 'NUNCA', 1, 0.0),
-    (3, 'A VECES', 'A VECES', 2, 3.0),
-    (3, 'SIEMPRE', 'SIEMPRE', 3, 7.0),
-    (4, 'NUNCA', 'NUNCA', 1, 0.0),
-    (4, 'A VECES', 'A VECES', 2, 3.0),
-    (4, 'SIEMPRE', 'SIEMPRE', 3, 7.0);
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 'NUNCA', 'NUNCA', 1, 0.0),
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 'A VECES', 'A VECES', 2, 3.0),
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 'SIEMPRE', 'SIEMPRE', 3, 7.0),
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 'NUNCA', 'NUNCA', 1, 0.0),
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 'A VECES', 'A VECES', 2, 3.0),
+    ((SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 'SIEMPRE', 'SIEMPRE', 3, 7.0);
 
 -- Puesto evaluable: todas sus competencias tienen al menos un factor con 2 preguntas.
 -- (DEV-01 y QA-01 quedan como ejemplos de puestos NO evaluables - flujo 9.A)
@@ -130,8 +130,8 @@ INSERT INTO puesto (codigo, nombre, descripcion, empresa, eliminado) VALUES
     ('BACK-01', 'DESARROLLADOR BACKEND JUNIOR', 'DESARROLLO DE SERVICIOS Y APIS.', 'TECH SOLUTIONS', FALSE);
 
 INSERT INTO caracteristica_puesto (puesto_id, competencia_id, ponderacion_requerida) VALUES
-    (3, 5, 5.0),
-    (3, 1, 4.0);
+    ((SELECT id FROM puesto WHERE codigo = 'BACK-01'), (SELECT id FROM competencia WHERE codigo = 'TEC-01'), 5.0),
+    ((SELECT id FROM puesto WHERE codigo = 'BACK-01'), (SELECT id FROM competencia WHERE codigo = 'COM-01'), 4.0);
 
 -- Candidatos sin cuestionarios (disponibles para evaluar)
 INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
@@ -149,12 +149,9 @@ INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, n
 INSERT INTO configuracion (instrucciones, tiempo_maximo_minutos, tiempo_maximo_activo_horas, cantidad_maxima_accesos, cantidad_preguntas_por_bloque) VALUES
     ('LEA CADA PREGUNTA CON ATENCIÓN Y ELIJA UNA ÚNICA OPCIÓN. LAS PREGUNTAS SE PRESENTAN EN BLOQUES: DEBE RESPONDER TODAS LAS PREGUNTAS DEL BLOQUE PARA AVANZAR Y, UNA VEZ QUE AVANZA, NO PUEDE VOLVER A UN BLOQUE ANTERIOR NI MODIFICAR SUS RESPUESTAS. PUEDE SALIR Y CONTINUAR MÁS TARDE MIENTRAS NO SE SUPERE EL TIEMPO MÁXIMO NI LA CANTIDAD MÁXIMA DE INGRESOS.', 60, 168, 5, 2);
 
--- Las ponderaciones de las opciones de cada pregunta deben sumar 10 (CU 021)
-UPDATE pregunta_opcion_respuesta SET ponderacion = 10.0 WHERE pregunta_id IN (1, 2) AND ponderacion = 1.0;
-
 -- Parámetros de los cuestionarios ya existentes
 UPDATE cuestionario SET tiempo_maximo_minutos = 60, tiempo_maximo_activo_horas = 168, cantidad_maxima_accesos = 5, cantidad_preguntas_por_bloque = 2;
-UPDATE cuestionario SET fecha_inicio = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_finalizacion = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_ultimo_ingreso = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_cambio_estado = DATEADD('DAY', -1, CURRENT_TIMESTAMP), cantidad_accesos = 1 WHERE id = 3;
+UPDATE cuestionario SET fecha_inicio = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_finalizacion = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_ultimo_ingreso = DATEADD('DAY', -1, CURRENT_TIMESTAMP), fecha_cambio_estado = DATEADD('DAY', -1, CURRENT_TIMESTAMP), cantidad_accesos = 1 WHERE clave_acceso = 'COMP1234';
 
 -- Candidatos para el orden de mérito (CU 028) y para probar el CU 026
 INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, nombre, email, eliminado) VALUES
@@ -171,122 +168,122 @@ INSERT INTO candidato (nro_candidato, tipo_documento, nro_documento, apellido, n
 
 -- Evaluación 2: BACK-01 hace 10 días (cuestionarios finalizados). Evaluación 3: BACK-01 reciente.
 INSERT INTO evaluacion (puesto_id, fecha_creacion) VALUES
-    (3, DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
-    (3, CURRENT_TIMESTAMP);
+    ((SELECT id FROM puesto WHERE codigo = 'BACK-01'), DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
+    ((SELECT id FROM puesto WHERE codigo = 'BACK-01'), CURRENT_TIMESTAMP);
 
--- id 4..10: evaluación 2 | id 11..13: evaluación 3
+-- Evaluación 2 (la más antigua de BACK-01): cuestionarios finalizados. Evaluación 3 (la más reciente): en curso.
 INSERT INTO cuestionario (candidato_id, evaluacion_id, puesto_id, estado, clave_acceso, fecha_creacion, fecha_inicio, fecha_finalizacion, fecha_ultimo_ingreso, fecha_cambio_estado, cantidad_accesos, tiempo_maximo_minutos, tiempo_maximo_activo_horas, cantidad_maxima_accesos, cantidad_preguntas_por_bloque, eliminado) VALUES
-    (9, 2, 3, 'COMPLETO', 'Sosa0009', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
-    (10, 2, 3, 'COMPLETO', 'Moli0010', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 2, 60, 168, 5, 2, FALSE),
-    (11, 2, 3, 'COMPLETO', 'Acos0011', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
-    (12, 2, 3, 'COMPLETO', 'Rios0012', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 3, 60, 168, 5, 2, FALSE),
-    (13, 2, 3, 'INCOMPLETO', 'Cast0013', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), NULL, DATEADD('DAY', -8, CURRENT_TIMESTAMP), DATEADD('DAY', -8, CURRENT_TIMESTAMP), 5, 60, 168, 5, 2, FALSE),
-    (14, 2, 3, 'SIN_CONTESTAR', 'Vega0014', DATEADD('DAY', -10, CURRENT_TIMESTAMP), NULL, NULL, NULL, DATEADD('DAY', -3, CURRENT_TIMESTAMP), 0, 60, 168, 5, 2, FALSE),
-    (18, 2, 3, 'SIN_CONTESTAR', 'Herrer18', DATEADD('DAY', -10, CURRENT_TIMESTAMP), NULL, NULL, NULL, DATEADD('DAY', -3, CURRENT_TIMESTAMP), 0, 60, 168, 5, 2, FALSE),
-    (15, 3, 3, 'EN_PROCESO', 'Torres15', DATEADD('MINUTE', -30, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), NULL, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
-    (16, 3, 3, 'ACTIVO', 'Suarez16', CURRENT_TIMESTAMP, NULL, NULL, NULL, CURRENT_TIMESTAMP, 0, 60, 168, 5, 2, FALSE),
-    (17, 3, 3, 'INCOMPLETO', 'Medina17', DATEADD('HOUR', -4, CURRENT_TIMESTAMP), DATEADD('HOUR', -3, CURRENT_TIMESTAMP), NULL, DATEADD('HOUR', -3, CURRENT_TIMESTAMP), DATEADD('HOUR', -2, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE);
+    ((SELECT id FROM candidato WHERE nro_candidato = 9), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'COMPLETO', 'Sosa0009', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 10), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'COMPLETO', 'Moli0010', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 2, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 11), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'COMPLETO', 'Acos0011', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 12), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'COMPLETO', 'Rios0012', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), 3, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 13), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'INCOMPLETO', 'Cast0013', DATEADD('DAY', -10, CURRENT_TIMESTAMP), DATEADD('DAY', -9, CURRENT_TIMESTAMP), NULL, DATEADD('DAY', -8, CURRENT_TIMESTAMP), DATEADD('DAY', -8, CURRENT_TIMESTAMP), 5, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 14), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'SIN_CONTESTAR', 'Vega0014', DATEADD('DAY', -10, CURRENT_TIMESTAMP), NULL, NULL, NULL, DATEADD('DAY', -3, CURRENT_TIMESTAMP), 0, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 18), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion ASC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'SIN_CONTESTAR', 'Herrer18', DATEADD('DAY', -10, CURRENT_TIMESTAMP), NULL, NULL, NULL, DATEADD('DAY', -3, CURRENT_TIMESTAMP), 0, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 15), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion DESC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'EN_PROCESO', 'Torres15', DATEADD('MINUTE', -30, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), NULL, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 16), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion DESC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'ACTIVO', 'Suarez16', CURRENT_TIMESTAMP, NULL, NULL, NULL, CURRENT_TIMESTAMP, 0, 60, 168, 5, 2, FALSE),
+    ((SELECT id FROM candidato WHERE nro_candidato = 17), (SELECT id FROM evaluacion WHERE puesto_id = (SELECT id FROM puesto WHERE codigo = 'BACK-01') ORDER BY fecha_creacion DESC LIMIT 1), (SELECT id FROM puesto WHERE codigo = 'BACK-01'), 'INCOMPLETO', 'Medina17', DATEADD('HOUR', -4, CURRENT_TIMESTAMP), DATEADD('HOUR', -3, CURRENT_TIMESTAMP), NULL, DATEADD('HOUR', -3, CURRENT_TIMESTAMP), DATEADD('HOUR', -2, CURRENT_TIMESTAMP), 1, 60, 168, 5, 2, FALSE);
 
 INSERT INTO bloque_cuestionario (cuestionario_id, numero, completado) VALUES
-    (3, 1, TRUE),
-    (4, 1, TRUE),
-    (4, 2, TRUE),
-    (5, 1, TRUE),
-    (5, 2, TRUE),
-    (6, 1, TRUE),
-    (6, 2, TRUE),
-    (7, 1, TRUE),
-    (7, 2, TRUE),
-    (8, 1, TRUE),
-    (8, 2, FALSE),
-    (11, 1, TRUE),
-    (11, 2, FALSE),
-    (13, 1, TRUE),
-    (13, 2, FALSE);
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'COMP1234'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Sosa0009'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Sosa0009'), 2, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Moli0010'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Moli0010'), 2, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Acos0011'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Acos0011'), 2, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Rios0012'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Rios0012'), 2, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Cast0013'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Cast0013'), 2, FALSE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Torres15'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Torres15'), 2, FALSE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Medina17'), 1, TRUE),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Medina17'), 2, FALSE);
 
 INSERT INTO pregunta_asignada (bloque_id, pregunta_id, nro_orden) VALUES
-    (1, 3, 1),
-    (1, 4, 2),
-    (2, 1, 1),
-    (2, 3, 2),
-    (3, 4, 3),
-    (3, 2, 4),
-    (4, 3, 1),
-    (4, 2, 2),
-    (5, 1, 3),
-    (5, 4, 4),
-    (6, 2, 1),
-    (6, 4, 2),
-    (7, 3, 3),
-    (7, 1, 4),
-    (8, 4, 1),
-    (8, 1, 2),
-    (9, 2, 3),
-    (9, 3, 4),
-    (10, 1, 1),
-    (10, 3, 2),
-    (11, 2, 3),
-    (11, 4, 4),
-    (12, 2, 1),
-    (12, 4, 2),
-    (13, 1, 3),
-    (13, 3, 4),
-    (14, 3, 1),
-    (14, 1, 2),
-    (15, 4, 3),
-    (15, 2, 4);
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'COMP1234' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'COMP1234' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 4),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?'), 1),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND b.numero = 1), (SELECT id FROM pregunta WHERE enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?'), 2),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?'), 3),
+    ((SELECT b.id FROM bloque_cuestionario b JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND b.numero = 2), (SELECT id FROM pregunta WHERE enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?'), 4);
 
 INSERT INTO respuesta_candidato (pregunta_asignada_id, opcion_id, fecha_respuesta) VALUES
-    (1, 7, DATEADD('DAY', -1, CURRENT_TIMESTAMP)),
-    (2, 9, DATEADD('DAY', -1, CURRENT_TIMESTAMP)),
-    (3, 1, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (4, 7, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (5, 10, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (6, 3, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (7, 7, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (8, 4, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (9, 1, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (10, 9, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (11, 3, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (12, 8, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (13, 7, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (14, 1, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (15, 9, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (16, 2, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (17, 4, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (18, 6, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (19, 1, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (20, 6, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (23, 3, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
-    (24, 10, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP)),
-    (27, 6, DATEADD('HOUR', -3, CURRENT_TIMESTAMP)),
-    (28, 1, DATEADD('HOUR', -3, CURRENT_TIMESTAMP));
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'COMP1234' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'SIEMPRE'), DATEADD('DAY',-1,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'COMP1234' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'A VECES'), DATEADD('DAY',-1,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN PARADIGMA BASADO EN OBJETOS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'SIEMPRE'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND pa.nro_orden = 3), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'SIEMPRE'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Sosa0009' AND pa.nro_orden = 4), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?' AND o.descripcion = 'GARANTIZA UNA ÚNICA INSTANCIA'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'SIEMPRE'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?' AND o.descripcion = 'CREA MUCHAS INSTANCIAS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND pa.nro_orden = 3), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN PARADIGMA BASADO EN OBJETOS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Moli0010' AND pa.nro_orden = 4), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'A VECES'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?' AND o.descripcion = 'GARANTIZA UNA ÚNICA INSTANCIA'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'NUNCA'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND pa.nro_orden = 3), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'SIEMPRE'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Acos0011' AND pa.nro_orden = 4), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN PARADIGMA BASADO EN OBJETOS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'A VECES'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN LENGUAJE DE PROGRAMACIÓN'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND pa.nro_orden = 3), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?' AND o.descripcion = 'CREA MUCHAS INSTANCIAS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Rios0012' AND pa.nro_orden = 4), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'A VECES'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN PARADIGMA BASADO EN OBJETOS'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Cast0013' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'A VECES'), DATEADD('DAY',-9,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿PARA QUÉ SIRVE EL PATRÓN SINGLETON?' AND o.descripcion = 'GARANTIZA UNA ÚNICA INSTANCIA'), DATEADD('MINUTE',-10,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Torres15' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA PIDE ACLARACIONES CUANDO NO ENTIENDE UNA CONSIGNA?' AND o.descripcion = 'SIEMPRE'), DATEADD('MINUTE',-10,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND pa.nro_orden = 1), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿CON QUÉ FRECUENCIA EXPONE SUS IDEAS EN REUNIONES DE EQUIPO?' AND o.descripcion = 'A VECES'), DATEADD('HOUR',-3,CURRENT_TIMESTAMP)),
+    ((SELECT pa.id FROM pregunta_asignada pa JOIN bloque_cuestionario b ON b.id = pa.bloque_id JOIN cuestionario c ON c.id = b.cuestionario_id WHERE c.clave_acceso = 'Medina17' AND pa.nro_orden = 2), (SELECT o.id FROM pregunta_opcion_respuesta o JOIN pregunta p ON p.id = o.pregunta_id WHERE p.enunciado = '¿QUÉ ES LA PROGRAMACIÓN ORIENTADA A OBJETOS (POO)?' AND o.descripcion = 'UN PARADIGMA BASADO EN OBJETOS'), DATEADD('HOUR',-3,CURRENT_TIMESTAMP));
 
 INSERT INTO resultado (cuestionario_id, puntaje_obtenido, fecha_calculo) VALUES
-    (3, 5.0, DATEADD('DAY', -1, CURRENT_TIMESTAMP)),
-    (4, 8.5, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (5, 5.0, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (6, 6.75, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-    (7, 1.5, DATEADD('DAY', -9, CURRENT_TIMESTAMP));
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'COMP1234'), 5.0, DATEADD('DAY', -1, CURRENT_TIMESTAMP)),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Sosa0009'), 7.0, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Moli0010'), 5.0, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Acos0011'), 5.25, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+    ((SELECT id FROM cuestionario WHERE clave_acceso = 'Rios0012'), 3.0, DATEADD('DAY', -9, CURRENT_TIMESTAMP));
 
 INSERT INTO resultado_competencia (resultado_id, caracteristica_puesto_id, total_competencia) VALUES
-    (1, 1, 5.0),
-    (2, 5, 10.0),
-    (2, 6, 7.0),
-    (3, 5, 5.0),
-    (3, 6, 5.0),
-    (4, 5, 10.0),
-    (4, 6, 3.5),
-    (5, 5, 0.0),
-    (5, 6, 3.0);
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'COMP1234'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'DEV-01' AND co.codigo = 'COM-01'), 5.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Sosa0009'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'TEC-01'), 7.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Sosa0009'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'COM-01'), 7.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Moli0010'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'TEC-01'), 5.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Moli0010'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'COM-01'), 5.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Acos0011'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'TEC-01'), 7.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Acos0011'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'COM-01'), 3.5),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Rios0012'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'TEC-01'), 3.0),
+    ((SELECT r.id FROM resultado r JOIN cuestionario c ON c.id = r.cuestionario_id WHERE c.clave_acceso = 'Rios0012'), (SELECT cp.id FROM caracteristica_puesto cp JOIN puesto pu ON pu.id = cp.puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE pu.codigo = 'BACK-01' AND co.codigo = 'COM-01'), 3.0);
 
 INSERT INTO resultado_factor (resultado_competencia_id, factor_id, total_factor) VALUES
-    (1, 1, 5.0),
-    (2, 3, 10.0),
-    (3, 1, 7.0),
-    (4, 3, 5.0),
-    (5, 1, 5.0),
-    (6, 3, 10.0),
-    (7, 1, 3.5),
-    (8, 3, 0.0),
-    (9, 1, 3.0);
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'COMP1234' AND co.codigo = 'COM-01'), (SELECT id FROM factor WHERE codigo = 'FAC-01'), 5.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Sosa0009' AND co.codigo = 'TEC-01'), (SELECT id FROM factor WHERE codigo = 'FAC-03'), 7.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Sosa0009' AND co.codigo = 'COM-01'), (SELECT id FROM factor WHERE codigo = 'FAC-01'), 7.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Moli0010' AND co.codigo = 'TEC-01'), (SELECT id FROM factor WHERE codigo = 'FAC-03'), 5.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Moli0010' AND co.codigo = 'COM-01'), (SELECT id FROM factor WHERE codigo = 'FAC-01'), 5.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Acos0011' AND co.codigo = 'TEC-01'), (SELECT id FROM factor WHERE codigo = 'FAC-03'), 7.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Acos0011' AND co.codigo = 'COM-01'), (SELECT id FROM factor WHERE codigo = 'FAC-01'), 3.5),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Rios0012' AND co.codigo = 'TEC-01'), (SELECT id FROM factor WHERE codigo = 'FAC-03'), 3.0),
+    ((SELECT rc.id FROM resultado_competencia rc JOIN resultado r ON r.id = rc.resultado_id JOIN cuestionario c ON c.id = r.cuestionario_id JOIN caracteristica_puesto cp ON cp.id = rc.caracteristica_puesto_id JOIN competencia co ON co.id = cp.competencia_id WHERE c.clave_acceso = 'Rios0012' AND co.codigo = 'COM-01'), (SELECT id FROM factor WHERE codigo = 'FAC-01'), 3.0);
