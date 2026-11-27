@@ -11,17 +11,6 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
-function resolveErrorMessage(status: number, statusText: string, errorData: unknown): string {
-  const payload = (errorData && typeof errorData === 'object' ? errorData : null) as
-    | { mensaje?: string; message?: string }
-    | null;
-  if (payload?.mensaje) return payload.mensaje;
-  if (payload?.message) return payload.message;
-  if (status === 401) return 'Tu sesión expiró o no es válida. Volvé a iniciar sesión.';
-  if (status === 403) return 'No tenés permisos para realizar esta solicitud.';
-  return `Error en la solicitud (${status}${statusText ? `: ${statusText}` : ''})`;
-}
-
 export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, headers, ...rest } = options;
   
@@ -53,8 +42,9 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
 
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...rest,
       headers: {
         ...defaultHeaders,
@@ -62,24 +52,28 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
       },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new ApiError(
-        response.status,
-        resolveErrorMessage(response.status, response.statusText, errorData),
-        errorData
-      );
-    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error de conexión con el servidor';
+    throw new ApiError(500, message || 'Error de conexión con el servidor');
+  }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new ApiError(
+      response.status,
+      errorData?.mensaje || errorData?.message || `Error en la solicitud (HTTP ${response.status}${response.statusText ? `: ${response.statusText}` : ''}).`,
+      errorData
+    );
+  }
 
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  try {
     return await response.json();
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    throw new ApiError(500, (error as Error).message || 'Error de conexión con el servidor');
+    const message = error instanceof Error ? error.message : 'No se pudo interpretar la respuesta del servidor';
+    throw new ApiError(500, message || 'No se pudo interpretar la respuesta del servidor');
   }
 }
