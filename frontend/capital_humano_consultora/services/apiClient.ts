@@ -11,6 +11,17 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
+function resolveErrorMessage(status: number, statusText: string, errorData: unknown): string {
+  const payload = (errorData && typeof errorData === 'object' ? errorData : null) as
+    | { mensaje?: string; message?: string }
+    | null;
+  if (payload?.mensaje) return payload.mensaje;
+  if (payload?.message) return payload.message;
+  if (status === 401) return 'Tu sesión expiró o no es válida. Volvé a iniciar sesión.';
+  if (status === 403) return 'No tenés permisos para realizar esta solicitud.';
+  return `Error en la solicitud (${status}${statusText ? `: ${statusText}` : ''})`;
+}
+
 export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, headers, ...rest } = options;
   
@@ -55,7 +66,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
       const errorData = await response.json().catch(() => null);
       throw new ApiError(
         response.status,
-        errorData?.mensaje || errorData?.message || `Error en la solicitud: ${response.statusText}`,
+        resolveErrorMessage(response.status, response.statusText, errorData),
         errorData
       );
     }
