@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, FileSpreadsheet, FileText, MoreHorizontal, Printer, Search, SlidersHorizontal, X } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +18,7 @@ function OrdenMeritosContent() {
   const [campoSugerencias, setCampoSugerencias] = useState<'codigo' | 'nombrePuesto' | null>(null);
   const [sugerencias, setSugerencias] = useState<PuestoOrdenMerito[]>([]);
   const [consultaSugerencias, setConsultaSugerencias] = useState('');
+  const catalogoPuestosRef = useRef<Promise<PuestoOrdenMerito[]> | null>(null);
   const [puestos, setPuestos] = useState<PuestoOrdenMerito[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionOrdenMerito[]>([]);
@@ -59,19 +60,25 @@ function OrdenMeritosContent() {
     let vigente = true;
     const temporizador = window.setTimeout(async () => {
       try {
-        const lista = await ordenMeritoService.buscarPuestos(
-          campoSugerencias === 'codigo'
-            ? { codigo: terminoSugerencias }
-            : { nombrePuesto: terminoSugerencias }
+        if (!catalogoPuestosRef.current) {
+          catalogoPuestosRef.current = ordenMeritoService.buscarPuestos({});
+        }
+        const catalogo = await catalogoPuestosRef.current;
+        const termino = terminoSugerencias.toLocaleLowerCase();
+        const lista = catalogo.filter((puesto) =>
+          (campoSugerencias === 'codigo' ? puesto.codigo : puesto.nombrePuesto)
+            .toLocaleLowerCase().includes(termino)
         );
         if (vigente) {
           setSugerencias(lista.slice(0, 8));
           setConsultaSugerencias(`${campoSugerencias}:${terminoSugerencias.toLocaleLowerCase()}`);
         }
-      } catch {
+      } catch (e) {
         if (vigente) {
           setSugerencias([]);
           setConsultaSugerencias(`${campoSugerencias}:${terminoSugerencias.toLocaleLowerCase()}`);
+          setError(e instanceof Error ? e.message : 'No se pudieron cargar las sugerencias de puestos.');
+          catalogoPuestosRef.current = null;
         }
       }
     }, 250);
