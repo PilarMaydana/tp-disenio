@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { DataTable, Column } from '@/components/organisms/DataTable';
@@ -60,10 +61,12 @@ export const GestionarCompetenciasScreen: React.FC = () => {
       {/* Migas de pan */}
       <nav
         aria-label="Migas de pan"
-        className="flex items-center gap-2 text-sm text-[#757575] font-medium"
+        className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium"
       >
-        <span>Gestión Consultor</span>
-        <span className="text-[#9E9E9E]">&gt;</span>
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <span className="font-semibold text-[#3F2581]">Competencias</span>
       </nav>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -136,15 +137,19 @@ export const AltaCompetenciaForm: React.FC<AltaCompetenciaFormProps> = ({
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto pb-12">
       {/* Migas de pan cohesivas con el resto del sistema */}
-      <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm text-[#757575] font-medium">
+      <nav aria-label="Migas de pan" className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium">
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <button
           type="button"
           onClick={handleCancel}
           className="hover:text-[#3F2581] transition-colors cursor-pointer"
         >
-          Gestión de Competencias
+          Competencias
         </button>
-        <span className="text-[#9E9E9E]">&gt;</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <span className="font-semibold text-[#3F2581]">Dar de alta Competencia</span>
       </nav>
 

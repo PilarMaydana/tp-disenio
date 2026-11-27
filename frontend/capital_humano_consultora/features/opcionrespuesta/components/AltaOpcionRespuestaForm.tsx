@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -59,16 +61,20 @@ export const AltaOpcionRespuestaForm: React.FC<AltaOpcionRespuestaFormProps> = (
       {/* Migas de pan cohesivas con el resto del sistema */}
       <nav
         aria-label="Migas de pan"
-        className="flex items-center gap-2 text-sm text-[#757575] font-medium"
+        className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium"
       >
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <button
           type="button"
           onClick={handleCancel}
           className="hover:text-[#3F2581] transition-colors cursor-pointer"
         >
-          Opciones de Respuesta
+          Opciones de respuesta
         </button>
-        <span className="text-[#9E9E9E]">&gt;</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <span className="font-semibold text-[#3F2581]">
           Dar de alta Opción de Respuesta
         </span>

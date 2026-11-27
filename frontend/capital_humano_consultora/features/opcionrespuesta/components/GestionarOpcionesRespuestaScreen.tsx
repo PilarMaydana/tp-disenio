@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -78,12 +80,14 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
       {/* Migas de pan */}
       <nav
         aria-label="Migas de pan"
-        className="flex items-center gap-2 text-sm text-[#757575] font-medium"
+        className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium"
       >
-        <span>Gestión Consultor</span>
-        <span className="text-[#9E9E9E]">&gt;</span>
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
         <span className="font-semibold text-[#3F2581]">
-          Opciones de Respuestas
+          Opciones de respuesta
         </span>
       </nav>
 
@@ -137,8 +141,7 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
                 onClick={handleBuscar}
                 isLoading={isLoading}
                 leftIcon="search"
-                size="md"
-                className="w-full sm:w-auto min-w-[120px] font-semibold"
+                className="w-full sm:w-auto"
               >
                 Buscar
               </Button>
@@ -222,7 +225,7 @@ export const GestionarOpcionesRespuestaScreen: React.FC<
             <div title="Próximamente">
               <Button
                 type="button"
-                variant="secondary-soft"
+                variant="secondary"
                 disabled={true}
                 leftIcon="trash"
               >

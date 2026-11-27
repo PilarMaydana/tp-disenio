@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { AlertCircle, ArrowLeft, ArrowRight, Award, Building2, CheckCircle2, ChevronDown, ClipboardList, FileSpreadsheet, FileText, MoreHorizontal, Printer, Search, SlidersHorizontal, X } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -259,8 +261,18 @@ function OrdenMeritosContent() {
   return <div className={`orden-merito-report mx-auto w-full ${reporteVisible ? 'max-w-7xl space-y-6 print:max-w-none print:space-y-3 print:text-black' : 'max-w-6xl space-y-4'}`}>
     {mostrarError && error && <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0"/><p className="flex-1">{error}</p><button type="button" onClick={() => setError('')} aria-label="Cerrar mensaje de error" title="Cerrar mensaje de error" className="shrink-0 rounded p-1 text-red-700 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700"><X size={16} aria-hidden="true"/></button></div>}
 
-    <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm font-medium text-[#757575] print:hidden">
-      <span>Orden de Méritos</span><span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span><span className="font-semibold text-[#3F2581]">{reporteVisible ? 'Orden generada' : puestoSeleccionado ? 'Seleccionar evaluaciones' : 'Buscar puestos'}</span>
+    <nav aria-label="Migas de pan" className="flex flex-wrap items-center gap-2 text-sm font-medium text-[#757575] print:hidden">
+      <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+      <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+      {reporteVisible || puestoSeleccionado ? (
+        <>
+          <span>Orden de Méritos</span>
+          <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+          <span className="font-semibold text-[#3F2581]">{reporteVisible ? 'Orden generada' : 'Seleccionar evaluaciones'}</span>
+        </>
+      ) : (
+        <span className="font-semibold text-[#3F2581]">Orden de Méritos</span>
+      )}
     </nav>
 
     {reporteVisible ? <>

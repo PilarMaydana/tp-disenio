@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectOption } from '@/components/ui/Select';
@@ -130,10 +132,12 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto pb-12">
       {/* Migas de pan de navegación */}
-      <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm text-[#757575] font-medium">
-        <span>Gestión de Preguntas</span>
-        <span className="text-[#9E9E9E]">&gt;</span>
-        <span className="font-semibold text-[#3F2581]">Buscar Preguntas</span>
+      <nav aria-label="Migas de pan" className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium">
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span className="font-semibold text-[#3F2581]">Preguntas</span>
       </nav>
 
       {/* Card principal */}
@@ -221,8 +225,6 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
               variant="secondary"
               onClick={handleLimpiarFiltros}
               disabled={isLoading || (!filtros.competencia && !filtros.factor && !filtros.nombre)}
-              size="sm"
-              className="min-w-[110px] font-semibold"
             >
               Limpiar
             </Button>
@@ -233,8 +235,6 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
               onClick={handleBuscar}
               isLoading={isLoading}
               leftIcon="search"
-              size="sm"
-              className="min-w-[110px] font-semibold"
             >
               Buscar
             </Button>
@@ -265,8 +265,6 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
                 variant="primary"
                 onClick={handleNuevo}
                 leftIcon="plus"
-                size="sm"
-                className="font-semibold shadow-xs min-w-[110px]"
               >
                 Nuevo
               </Button>
@@ -278,8 +276,6 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
                 onClick={handleModificar}
                 disabled={!selectedPreguntaId}
                 leftIcon="edit"
-                size="sm"
-                className="font-semibold min-w-[110px]"
               >
                 Modificar
               </Button>
@@ -291,8 +287,6 @@ export const GestionarPreguntasScreen: React.FC<GestionarPreguntasScreenProps> =
                 onClick={handleEliminar}
                 disabled={!selectedPreguntaId}
                 leftIcon="trash"
-                size="sm"
-                className="font-semibold min-w-[110px]"
               >
                 Eliminar
               </Button>

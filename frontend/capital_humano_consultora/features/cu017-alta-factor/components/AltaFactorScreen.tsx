@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 import { NotchedField } from '@/components/molecules/NotchedField';
 import { Input } from '@/components/ui/Input';
 import { Select, SelectOption } from '@/components/ui/Select';
@@ -90,10 +92,12 @@ export const AltaFactorScreen: React.FC<AltaFactorScreenProps> = ({
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto pb-12">
       {/* Breadcrumb idéntico al prototipo de diseño */}
-      <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm text-[#757575] font-medium">
-        <span>Gestión de Factores</span>
-        <span className="text-[#9E9E9E]">&gt;</span>
-        <span className="font-semibold text-[#3F2581]">Dar de alta Factor</span>
+      <nav aria-label="Migas de pan" className="flex flex-wrap items-center gap-2 text-sm text-[#757575] font-medium">
+        <Link href={ROUTES.CONSULTOR.INICIO} className="hover:text-[#3F2581] transition-colors">Gestión Consultor</Link>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span>Configurar evaluación</span>
+        <span className="text-[#9E9E9E]" aria-hidden="true">&gt;</span>
+        <span className="font-semibold text-[#3F2581]">Factores</span>
       </nav>
 
       {/* Card principal con borde suave y esquinas redondeadas */}
@@ -233,7 +237,6 @@ export const AltaFactorScreen: React.FC<AltaFactorScreenProps> = ({
               variant="secondary"
               onClick={handleCancelar}
               disabled={isSubmitting}
-              className="px-8 min-w-[120px]"
             >
               Cancelar
             </Button>
@@ -242,7 +245,6 @@ export const AltaFactorScreen: React.FC<AltaFactorScreenProps> = ({
               type="submit"
               variant="primary"
               isLoading={isSubmitting}
-              className="px-8 min-w-[120px]"
             >
               Aceptar
             </Button>
