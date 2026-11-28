@@ -56,14 +56,14 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (notificationUserId && notificationUserName) {
+      if (!isCandidato && notificationUserId && notificationUserName) {
         setNotifications(notificationService.initializeForUser({ id: notificationUserId, name: notificationUserName }));
       } else {
         setNotifications([]);
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [notificationUserId, notificationUserName]);
+  }, [isCandidato, notificationUserId, notificationUserName]);
 
   const abrirNotificacion = (notification: AppNotification) => {
     if (!notificationUserId) return;
@@ -136,40 +136,42 @@ export const Topbar: React.FC<TopbarProps> = ({ consultorNombre, className = '' 
         {!isCandidato && <UserProfileBadge user={displayUser} />}
 
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setNotificationsOpen((open) => !open)}
-              className="relative cursor-pointer rounded-lg border border-white/20 bg-transparent p-2 text-white transition-colors hover:bg-white/10"
-              aria-label="Notificaciones"
-              aria-expanded={notificationsOpen}
-              aria-controls="panel-notificaciones"
-              title="Notificaciones"
-            >
-              <Icon name="notifications" size={20} />
-              {hasUnreadNotifications && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#D32F2F]" />}
-            </button>
+          {!isCandidato && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen((open) => !open)}
+                className="relative cursor-pointer rounded-lg border border-white/20 bg-transparent p-2 text-white transition-colors hover:bg-white/10"
+                aria-label="Notificaciones"
+                aria-expanded={notificationsOpen}
+                aria-controls="panel-notificaciones"
+                title="Notificaciones"
+              >
+                <Icon name="notifications" size={20} />
+                {hasUnreadNotifications && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#D32F2F]" />}
+              </button>
 
-            {notificationsOpen && <section id="panel-notificaciones" aria-label="Panel de notificaciones" className="absolute right-0 z-50 mt-3 w-[min(90vw,24rem)] overflow-hidden rounded-xl border border-[#E3DFE9] bg-white text-[#24212A] shadow-xl">
-              <header className="border-b border-[#E7E4EB] bg-[#FAF9FC] px-5 py-4 text-center">
-                <h2 className="text-base font-semibold">Notificaciones</h2>
-                {notifications.length > 0 && <p className="mt-1 text-xs text-[#77717E]">{notifications.length} {notifications.length === 1 ? 'mensaje' : 'mensajes'}</p>}
-              </header>
-              {notifications.length === 0 ? <div className="px-5 py-12 text-center text-sm text-[#77717E]">No se encuentran notificaciones</div> : <ul className="max-h-[min(60vh,24rem)] space-y-2 overflow-y-auto p-3 text-center">
-                {notifications.map((notification) => {
-                  const isOpen = openedNotificationId === notification.id;
-                  return <li key={notification.id} className={`rounded-lg border px-4 py-3 transition-colors ${notification.isRead ? 'border-[#D4D0D9] bg-[#E8E5EB]' : 'border-[#E3D9F4] bg-[#F7F3FC]'}`}>
-                    <button type="button" onClick={() => abrirNotificacion(notification)} aria-expanded={isOpen} className="w-full text-center">
-                      <span className="block text-sm font-semibold">{notification.title}</span>
-                      <span className="mt-1 block text-xs text-[#77717E]">{formatoFechaNotificacion(notification.createdAt)}</span>
-                      {isOpen && <span className="mt-3 block text-sm leading-relaxed text-[#4A4650]">{notification.message}</span>}
-                    </button>
-                    {!notification.isRead && <button type="button" onClick={() => marcarComoLeida(notification.id)} className="mt-3 text-xs font-semibold text-[#51377F] underline-offset-2 hover:underline">Marcar como leída</button>}
-                  </li>;
-                })}
-              </ul>}
-            </section>}
-          </div>
+              {notificationsOpen && <section id="panel-notificaciones" aria-label="Panel de notificaciones" className="absolute right-0 z-50 mt-3 w-[min(90vw,24rem)] overflow-hidden rounded-xl border border-[#E3DFE9] bg-white text-[#24212A] shadow-xl">
+                <header className="border-b border-[#E7E4EB] bg-[#FAF9FC] px-5 py-4 text-center">
+                  <h2 className="text-base font-semibold">Notificaciones</h2>
+                  {notifications.length > 0 && <p className="mt-1 text-xs text-[#77717E]">{notifications.length} {notifications.length === 1 ? 'mensaje' : 'mensajes'}</p>}
+                </header>
+                {notifications.length === 0 ? <div className="px-5 py-12 text-center text-sm text-[#77717E]">No se encuentran notificaciones</div> : <ul className="max-h-[min(60vh,24rem)] space-y-2 overflow-y-auto p-3 text-center">
+                  {notifications.map((notification) => {
+                    const isOpen = openedNotificationId === notification.id;
+                    return <li key={notification.id} className={`rounded-lg border px-4 py-3 transition-colors ${notification.isRead ? 'border-[#D4D0D9] bg-[#E8E5EB]' : 'border-[#E3D9F4] bg-[#F7F3FC]'}`}>
+                      <button type="button" onClick={() => abrirNotificacion(notification)} aria-expanded={isOpen} className="w-full text-center">
+                        <span className="block text-sm font-semibold">{notification.title}</span>
+                        <span className="mt-1 block text-xs text-[#77717E]">{formatoFechaNotificacion(notification.createdAt)}</span>
+                        {isOpen && <span className="mt-3 block text-sm leading-relaxed text-[#4A4650]">{notification.message}</span>}
+                      </button>
+                      {!notification.isRead && <button type="button" onClick={() => marcarComoLeida(notification.id)} className="mt-3 text-xs font-semibold text-[#51377F] underline-offset-2 hover:underline">Marcar como leída</button>}
+                    </li>;
+                  })}
+                </ul>}
+              </section>}
+            </div>
+          )}
 
           <button
             type="button"

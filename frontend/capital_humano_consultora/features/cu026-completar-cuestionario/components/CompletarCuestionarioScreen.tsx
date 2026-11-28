@@ -125,15 +125,13 @@ export const CompletarCuestionarioScreen: React.FC = () => {
       {cu.fase === 'instrucciones' && cu.instrucciones && cu.resumen && (
         <Tarjeta>
           <h2 className="text-xl font-bold text-[#3F2581]">Cuestionario – Instrucciones</h2>
-          <p className="text-[#333333] leading-relaxed whitespace-pre-line">{cu.instrucciones.instrucciones}</p>
-          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <p className="text-[#333333] leading-relaxed text-justify">
+            Lea cada pregunta con atención y elija una única opción. Las preguntas se presentan en bloques: debe responder todas las preguntas del bloque para avanzar y, una vez que avanza, no puede volver a un bloque anterior ni modificar sus respuestas. Puede salir y continuar más tarde mientras no se supere el tiempo máximo ni la cantidad máxima de ingresos.
+          </p>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <li className="p-3 bg-[#F4F0FF] rounded-xl">
               <span className="block text-[#757575]">Tiempo máximo</span>
               <strong className="text-[#3F2581]">{cu.resumen.tiempoMaximoMinutos ?? cu.instrucciones.tiempoMaximoMinutos} minutos</strong>
-            </li>
-            <li className="p-3 bg-[#F4F0FF] rounded-xl">
-              <span className="block text-[#757575]">Preguntas por bloque</span>
-              <strong className="text-[#3F2581]">{cu.instrucciones.cantidadPreguntasPorBloque}</strong>
             </li>
             <li className="p-3 bg-[#F4F0FF] rounded-xl">
               <span className="block text-[#757575]">Ingresos realizados</span>
