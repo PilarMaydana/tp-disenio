@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Servicio principal de autenticación que implementa las reglas de negocio para el CU001.
@@ -26,6 +27,13 @@ public class AuthService {
 
     public static final String ERROR_CONSULTOR = "El usuario o la contraseña no son válidos";
     public static final String ERROR_CANDIDATO = "Los datos ingresados no son válidos o no existe un cuestionario para el Candidato";
+
+    private record ConsultorPerfil(Long id, String nombre, String apellido) {}
+
+    private static final Map<String, ConsultorPerfil> CONSULTORES_HABILITADOS = Map.of(
+            "LFERNANDEZ", new ConsultorPerfil(1L, "Lucía", "Fernández"),
+            "MGOMEZ", new ConsultorPerfil(2L, "Martín", "Gómez")
+    );
 
     private final ILdapAuthStrategy ldapAuthStrategy;
     private final CandidatoRepository candidatoRepository;
@@ -61,9 +69,8 @@ public class AuthService {
         // Requerimiento especial: conversión siempre a mayúsculas
         String usuarioNormalizado = request.getUsuario().trim().toUpperCase();
 
-        // La auditoría actual asigna todas las operaciones a la consultora Lucía Fernández.
-        // No permitir que otro usuario LDAP herede esa identidad hasta que exista un mapeo de usuarios.
-        if (!"LFERNANDEZ".equals(usuarioNormalizado)) {
+        ConsultorPerfil perfil = CONSULTORES_HABILITADOS.get(usuarioNormalizado);
+        if (perfil == null) {
             log.warn("Intento de acceso de consultor no habilitado: {}", usuarioNormalizado);
             throw new AutenticacionException(ERROR_CONSULTOR);
         }
@@ -74,14 +81,11 @@ public class AuthService {
             throw new AutenticacionException(ERROR_CONSULTOR);
         }
 
-        Long usuarioId = 1L; // ID representativo de la consultora
+        Long usuarioId = perfil.id();
         String token = jwtTokenService.generarTokenConsultor(usuarioNormalizado, usuarioId);
 
-        String nombre = "Lucía";
-        String apellido = "Fernández";
-
         log.info("Consultor '{}' autenticado correctamente con ID {}", usuarioNormalizado, usuarioId);
-        return AuthResponseDTO.paraConsultor(token, usuarioId, nombre, apellido);
+        return AuthResponseDTO.paraConsultor(token, usuarioId, perfil.nombre(), perfil.apellido());
     }
 
     /**

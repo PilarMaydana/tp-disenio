@@ -24,7 +24,8 @@ public class MockLdapAuthStrategy implements ILdapAuthStrategy {
      * Se utiliza exclusivamente a la consultora Lucía Fernández para fines de auditoría nominativa.
      */
     private static final Map<String, String> CREDENCIALES_VALIDAS = Map.of(
-            "LFERNANDEZ", "admin123"
+            "LFERNANDEZ", "admin123",
+            "MGOMEZ", "admin123"
     );
 
     @Override

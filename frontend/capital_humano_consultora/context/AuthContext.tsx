@@ -44,6 +44,7 @@ function resolveDisplayName(
   if (role === 'CONSULTOR') {
     const NOMBRES_CONSULTORES: Record<string, string> = {
       LFERNANDEZ: 'Lucía Fernández',
+      MGOMEZ: 'Martín Gómez',
     };
     return NOMBRES_CONSULTORES[idUpper] || toTitleCase(identifier);
   } else {
